@@ -73,7 +73,7 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/apnea-trainer.git
-cd apnea-trainer
+cd "Apnea trainer"
 ```
 
 2. Install dependencies:
