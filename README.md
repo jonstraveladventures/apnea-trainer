@@ -178,7 +178,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Train with a buddy or in a safe environment
 - Never push beyond your limits
-- Stop immediately if you feel dizzy, lightheaded, or uncomfortable
 - Consult with a medical professional before starting breath-hold training
 - This app is not a substitute for proper freediving instruction
 
