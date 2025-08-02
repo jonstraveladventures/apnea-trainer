@@ -30,7 +30,7 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 - **Recovery & Flexibility**: Stretching and recovery sessions
 
 ### 📊 Session Management
-- 7-day training plan with customizable sessions
+- Dynamic 7-day training plan that updates daily, showing the next 7 days of an indefinite training program
 - Session completion tracking
 - Dynamic session details based on your max breath-hold time
 - Custom session creation with template-based editing
@@ -53,7 +53,7 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 
 ### Main Page - 7-Day Training Plan
 ![Main Page](main-page.png)
-*The main dashboard showing your 7-day training plan with session cards, completion status, and quick access to session details.*
+*The main dashboard showing your dynamic 7-day training plan with session cards, completion status, and quick access to session details. The plan updates daily to show the next 7 days of your ongoing training program.*
 
 ### Timer Page - Active Session
 ![Timer Page](timer-page.png)
@@ -92,7 +92,7 @@ This will start both the React development server and the Electron application.
 
 ### Getting Started
 1. **Create a Profile**: When you first open the app, you'll be prompted to create a profile with your max breath-hold time
-2. **View Your Plan**: The main page shows your 7-day training plan
+2. **View Your Plan**: The main page shows your dynamic 7-day training plan, which updates daily to display the next 7 days of your ongoing training program
 3. **Start a Session**: Click on any day to start a training session
 4. **Follow Instructions**: Each session includes detailed instructions and guidance
 5. **Track Progress**: Mark sessions as completed and track your improvements
