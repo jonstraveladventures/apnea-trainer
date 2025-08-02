@@ -187,6 +187,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Based on evidence-based freediving training protocols
 - Built with React, Electron, and Tailwind CSS
 - Inspired by the freediving community's training methods
+- Developed using [Cursor](https://cursor.sh/) - an AI-powered code editor
+
+## Development Note
+
+This project was developed using [Cursor](https://cursor.sh/), an AI-powered code editor that significantly accelerated the development process through intelligent code completion, refactoring suggestions, and collaborative AI assistance.
 
 ## Support
 
