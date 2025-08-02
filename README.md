@@ -33,6 +33,20 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 - Session preview with estimated duration
 - Responsive design with Tailwind CSS
 
+## Screenshots
+
+### Main Page - 7-Day Training Plan
+![Main Page](main-page.png)
+*The main dashboard showing your 7-day training plan with session cards, completion status, and quick access to session details.*
+
+### Timer Page - Active Session
+![Timer Page](timer-page.png)
+*The active session timer with real-time guidance, phase instructions, and progress tracking.*
+
+### Progress Page - Session History
+![Progress Page](progress-page.png)
+*Progress tracking and session history with completion statistics and performance insights.*
+
 ## Installation
 
 ### Prerequisites
