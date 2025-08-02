@@ -1,5 +1,34 @@
 # Apnea Trainer
 
+## ⚠️ CRITICAL SAFETY WARNING
+
+**THIS APPLICATION IS FOR EDUCATIONAL AND TRAINING PURPOSES ONLY. BREATH-HOLD TRAINING CAN BE EXTREMELY DANGEROUS AND MAY RESULT IN SERIOUS INJURY OR DEATH.**
+
+### 🚨 SAFETY DISCLAIMERS
+
+- **NEVER practice breath-hold exercises in or near water**
+- **NEVER practice alone** - always have a trained buddy present
+- **NEVER push beyond your limits** - stop immediately if you feel dizzy, lightheaded, or uncomfortable
+- **NEVER use this app as a substitute for proper freediving instruction**
+- **NEVER attempt breath-hold training without medical clearance**
+
+### ⚖️ LIABILITY DISCLAIMER
+
+This software is provided "AS IS" without any warranties. The developers and contributors are not responsible for any injuries, accidents, or fatalities that may occur from using this application. Users assume all risks and responsibilities for their own safety.
+
+### 🏥 MEDICAL PRECAUTIONS
+
+- Consult with a medical professional before starting any breath-hold training
+- Do not use if you have heart conditions, respiratory issues, or other medical concerns
+- This app is not suitable for individuals with certain medical conditions
+- Pregnant women should not engage in breath-hold training
+
+### 🎯 INTENDED USE
+
+This application is designed to assist with **dry land training only** and should be used as part of a comprehensive freediving education program under professional supervision.
+
+---
+
 A comprehensive desktop application for freediving and breath-hold training, built with React and Electron. This app provides structured training sessions based on evidence-based protocols for CO₂ tolerance, O₂ tolerance, breath control, and mental training.
 
 ## Features
