@@ -92,14 +92,33 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 
 ## 🚀 Installation
 
-### Prerequisites
+### Option 1: Download Pre-built Application (Recommended)
+
+#### For Windows Users:
+1. Download the latest Windows installer from the [Releases](https://github.com/jonstraveladventures/apnea-trainer/releases) page
+2. Run the `.exe` installer and follow the setup wizard
+3. Launch "Apnea Trainer" from your Start Menu
+
+#### For macOS Users:
+1. Download the latest macOS `.dmg` file from the [Releases](https://github.com/jonstraveladventures/apnea-trainer/releases) page
+2. Open the `.dmg` file and drag "Apnea Trainer" to your Applications folder
+3. Launch from Applications or Spotlight
+
+#### For Linux Users:
+1. Download the latest Linux `.AppImage` file from the [Releases](https://github.com/jonstraveladventures/apnea-trainer/releases) page
+2. Make the file executable: `chmod +x ApneaTrainer-*.AppImage`
+3. Run the AppImage: `./ApneaTrainer-*.AppImage`
+
+### Option 2: Build from Source
+
+#### Prerequisites
 - Node.js (v14 or higher)
 - npm (v6 or higher)
 
-### Setup
+#### Setup
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/apnea-trainer.git
+git clone https://github.com/jonstraveladventures/apnea-trainer.git
 cd "Apnea trainer"
 ```
 
@@ -114,6 +133,22 @@ npm run electron-dev
 ```
 
 This will start both the React development server and the Electron application.
+
+#### Building for Distribution
+To create distributable packages for your platform:
+
+```bash
+# Build for current platform
+npm run dist
+
+# Build for specific platforms
+npm run dist-mac    # macOS
+npm run dist-win    # Windows
+npm run dist-linux  # Linux
+
+# Build for all platforms (requires cross-compilation setup)
+npm run dist-all
+```
 
 ## 📖 Comprehensive Usage Guide
 
