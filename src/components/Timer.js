@@ -4,7 +4,7 @@ import { formatTime, getWeekday, generateSessionDetails, generateSchedule, START
 import dayjs from 'dayjs';
 import MaxHoldModal from './MaxHoldModal';
 
-const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, currentMaxHold }) => {
+const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, currentMaxHold, customSessions }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(0);
   const [sessionTime, setSessionTime] = useState(0);
@@ -76,6 +76,9 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
   const [currentMaxHoldPhase, setCurrentMaxHoldPhase] = useState(0);
   const [showInstructions, setShowInstructions] = useState(false);
   const [currentInstruction, setCurrentInstruction] = useState(null);
+  const [showNextPhaseInstructions, setShowNextPhaseInstructions] = useState(false);
+  const [nextPhaseInstruction, setNextPhaseInstruction] = useState(null);
+  const [selectedSessionType, setSelectedSessionType] = useState(todaySession?.focus || 'CO₂ Tolerance');
 
   // Exercise instructions
   const exerciseInstructions = {
@@ -169,24 +172,24 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       title: 'CO₂ Tolerance Hold',
       description: 'Building tolerance to carbon dioxide buildup',
       steps: [
-        'Take a normal breath in',
-        'Hold your breath without forcing',
-        'Focus on staying relaxed',
+        'Take a normal, relaxed breath in (not a deep breath)',
+        'Hold your breath without forcing or straining',
+        'Focus on staying completely relaxed',
         'Notice the urge to breathe but don\'t panic',
-        'When you need to breathe, exhale slowly',
-        'Take a few recovery breaths before the next hold'
+        'When you need to breathe, exhale slowly and naturally',
+        'Take 2-3 normal recovery breaths before the next hold'
       ]
     },
     'o2_hold': {
       title: 'O₂ Tolerance Hold',
       description: 'Training your body to function with lower oxygen levels',
       steps: [
-        'Take a deep breath in',
-        'Hold your breath comfortably',
-        'Stay relaxed and avoid tension',
-        'Focus on your mental state',
-        'When you need to breathe, exhale slowly',
-        'Take full recovery breaths between holds'
+        'Take a deep, full breath in (fill your lungs completely)',
+        'Hold your breath comfortably without straining',
+        'Stay relaxed and avoid any tension',
+        'Focus on your mental state and calmness',
+        'When you need to breathe, exhale slowly and completely',
+        'Take 3-4 full recovery breaths between holds'
       ]
     },
     'max_hold': {
@@ -239,8 +242,22 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
     if (todaySession && todaySession.actualMaxHold) {
       const phases = parseSessionPhases(todaySession.focus, todaySession.actualMaxHold);
       setSessionPhases(phases);
+      setSelectedSessionType(todaySession.focus);
     }
   }, [todaySession]);
+
+  // Update session phases when selected session type changes
+  useEffect(() => {
+    if (selectedSessionType && currentMaxHold) {
+      const phases = parseSessionPhases(selectedSessionType, currentMaxHold);
+      setSessionPhases(phases);
+      setCurrentPhase(0);
+      setPhaseTime(0);
+      setStretchConfirmed(false);
+      setMaxHoldCompleted(false);
+      setCurrentMaxHoldPhase(0);
+    }
+  }, [selectedSessionType, currentMaxHold]);
 
   // Show max hold modal if no max hold is set
   useEffect(() => {
@@ -261,6 +278,18 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
           if (sessionPhases[currentPhase]) {
             const currentPhaseData = sessionPhases[currentPhase];
             
+            // Show next phase instructions 10 seconds before phase ends
+            if (currentPhaseData.duration > 0 && phaseTime >= currentPhaseData.duration - 10) {
+              if (currentPhase < sessionPhases.length - 1) {
+                const nextPhase = sessionPhases[currentPhase + 1];
+                const nextExerciseType = getExerciseTypeFromPhase(nextPhase);
+                if (nextExerciseType && exerciseInstructions[nextExerciseType]) {
+                  setNextPhaseInstruction(exerciseInstructions[nextExerciseType]);
+                  setShowNextPhaseInstructions(true);
+                }
+              }
+            }
+            
             // Handle special phase types
             if (currentPhaseData.type === 'stretch_confirmation') {
               // Wait for stretch confirmation - do nothing here, let the button handle it
@@ -268,6 +297,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
               // Wait for manual completion for 100% max holds only - do nothing here, let the button handle it
             } else if (phaseTime >= currentPhaseData.duration) {
               // Regular phase completion
+              setShowNextPhaseInstructions(false);
+              setNextPhaseInstruction(null);
               if (currentPhase < sessionPhases.length - 1) {
                 setCurrentPhase(prev => prev + 1);
                 setPhaseTime(0);
@@ -311,6 +342,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
     setPhaseTime(0);
     setStretchConfirmed(false);
     setMaxHoldCompleted(false);
+    setShowNextPhaseInstructions(false);
+    setNextPhaseInstruction(null);
   };
 
   const resetSessionCompletion = () => {
@@ -321,6 +354,55 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
   // Parse session details into phases
   const parseSessionPhases = (focus, maxHoldSeconds) => {
     const phases = [];
+    
+    // Check if this is a custom session
+    if (customSessions && customSessions[focus]) {
+      const customSession = customSessions[focus];
+      
+      // Add stretch confirmation and tidal breathing if enabled
+      if (customSession.stretchConfirmation) {
+        phases.push({ 
+          type: 'stretch_confirmation', 
+          duration: 0, 
+          description: 'Stretch Confirmation',
+          instructions: 'Please confirm that you have stretched and are in a comfortable position.'
+        });
+      }
+      
+      if (customSession.tidalBreathingDuration) {
+        phases.push({ 
+          type: 'tidal_breathing', 
+          duration: customSession.tidalBreathingDuration, 
+          description: `Tidal Breathing (${formatTime(customSession.tidalBreathingDuration)})`,
+          isTidalBreathing: true,
+          instructions: 'Breathe naturally and rhythmically to prepare your body.'
+        });
+      }
+      
+      // Add custom phases
+      customSession.phases.forEach((phase, index) => {
+        let duration = phase.duration;
+        
+        // Calculate duration based on type
+        if (phase.durationType === 'progressive' && index > 0) {
+          // This would need to be calculated based on previous phase
+          // For now, use the progressive change value
+          duration = phase.progressiveChange;
+        } else if (phase.durationType === 'maxHold' && maxHoldSeconds) {
+          duration = Math.round((phase.maxHoldPercentage / 100) * maxHoldSeconds);
+        }
+        
+        phases.push({
+          type: phase.type,
+          duration: duration,
+          description: phase.description || `${phase.type.charAt(0).toUpperCase() + phase.type.slice(1)} Phase`,
+          instructions: phase.instructions || `Complete the ${phase.type} phase.`
+        });
+      });
+      
+      return phases;
+    }
+    
     const template = sessionTemplates[focus] || {};
     
     // Add stretch confirmation phase for all sessions if enabled
@@ -585,6 +667,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
     setPhaseTime(0);
     setStretchConfirmed(false);
     setMaxHoldCompleted(false);
+    setShowNextPhaseInstructions(false);
+    setNextPhaseInstruction(null);
     setIsRestPhase(sessionPhases[0]?.type === 'rest');
     startTimer();
   };
@@ -703,12 +787,38 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
   };
 
   return (
-    <div className="card max-w-md mx-auto">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-6 flex items-center justify-center gap-2">
-          <TimerIcon className="w-6 h-6" />
-          Breath-Hold Timer
-        </h2>
+    <div className="max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Panel - Timer */}
+        <div className="card">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-6 flex items-center justify-center gap-2">
+              <TimerIcon className="w-6 h-6" />
+              Breath-Hold Timer
+            </h2>
+
+            {/* Session Type Selector */}
+            <div className="mb-6">
+              <label className="text-sm text-deep-300 mb-2 block">Session Type:</label>
+              <select
+                value={selectedSessionType}
+                onChange={(e) => setSelectedSessionType(e.target.value)}
+                className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+                disabled={isSessionActive}
+              >
+                <option value="CO₂ Tolerance">CO₂ Tolerance</option>
+                <option value="O₂ Tolerance">O₂ Tolerance</option>
+                <option value="Breath Control">Breath Control</option>
+                <option value="Mental + Technique">Mental + Technique</option>
+                <option value="Max Breath-Hold">Max Breath-Hold</option>
+                <option value="Recovery & Flexibility">Recovery & Flexibility</option>
+                {Object.keys(customSessions || {}).map(sessionName => (
+                  <option key={sessionName} value={sessionName}>
+                    🎯 {sessionName}
+                  </option>
+                ))}
+              </select>
+            </div>
         
         {/* Today's Session Info */}
         {todaySession && (
@@ -885,13 +995,7 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
           </div>
         )}
 
-        {/* Total Session Time */}
-        <div className="mb-8">
-          <div className="text-sm text-deep-400 mb-2">Total Time</div>
-          <div className={`timer-display ${getTimerColor()} ${isSessionActive && sessionPhases[currentPhase]?.isTidalBreathing ? 'animate-breathe' : ''}`}>
-            {formatTime(sessionTime)}
-          </div>
-        </div>
+
 
         {/* Phase Timer Display */}
         {isSessionActive && sessionPhases[currentPhase] && (
@@ -911,22 +1015,9 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
         {/* Current Phase Guidance */}
         {isSessionActive && sessionPhases[currentPhase] && (
           <div className="mb-6 p-4 bg-deep-800/50 border border-deep-700 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-white">
-                {sessionPhases[currentPhase].description}
-              </h3>
-              <button
-                onClick={() => {
-                  const exerciseType = getExerciseTypeFromPhase(sessionPhases[currentPhase]);
-                  if (exerciseType) {
-                    showExerciseInstructions(exerciseType);
-                  }
-                }}
-                className="text-ocean-400 hover:text-ocean-300 text-sm underline"
-              >
-                View Instructions
-              </button>
-            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              {sessionPhases[currentPhase].description}
+            </h3>
             <div className="text-deep-300 text-sm">
               {getPhaseGuidance(sessionPhases[currentPhase])}
             </div>
@@ -994,40 +1085,9 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
           </button>
         </div>
 
-        {/* Session Template Editor Button */}
-        <div className="mt-4">
-          <button
-            onClick={() => setShowTemplateEditor(true)}
-            className="btn-secondary w-full flex items-center justify-center gap-2"
-          >
-            <Settings className="w-4 h-4" />
-            Edit Session Templates
-          </button>
-        </div>
 
-        {/* Edit Session Types Button */}
-        <div className="mt-2">
-          <button
-            onClick={() => setShowSessionEditor(true)}
-            className="btn-secondary w-full flex items-center justify-center gap-2"
-          >
-            <Edit3 className="w-4 h-4" />
-            Edit Session Types
-          </button>
-        </div>
 
-        {/* Set Max Hold Button */}
-        {!todaySession?.actualMaxHold && (
-          <div className="mt-4">
-            <button
-              onClick={() => setShowMaxHoldModal(true)}
-              className="btn-secondary w-full flex items-center justify-center gap-2"
-            >
-              <Edit3 className="w-4 h-4" />
-              Set Max Hold Time
-            </button>
-          </div>
-        )}
+
         
 
 
@@ -1618,6 +1678,100 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
             </div>
           </div>
         )}
+          </div>
+        </div>
+
+        {/* Right Panel - Instructions */}
+        <div className="card">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-6 flex items-center justify-center gap-2">
+              📋 Session Instructions
+            </h2>
+          </div>
+
+          {/* Current Phase Instructions */}
+          {isSessionActive && sessionPhases[currentPhase] && (
+            <div className="mb-6 p-4 bg-deep-800 rounded-lg border border-deep-700">
+              <h3 className="text-lg font-semibold text-white mb-3">
+                {sessionPhases[currentPhase].description}
+              </h3>
+              {(() => {
+                const exerciseType = getExerciseTypeFromPhase(sessionPhases[currentPhase]);
+                const instruction = exerciseType ? exerciseInstructions[exerciseType] : null;
+                return instruction ? (
+                  <div className="space-y-3">
+                    <p className="text-deep-300">{instruction.description}</p>
+                    <div>
+                      <h4 className="text-white font-semibold mb-2">Steps:</h4>
+                      <ol className="space-y-2">
+                        {instruction.steps.map((step, index) => (
+                          <li key={index} className="text-deep-300 flex">
+                            <span className="text-ocean-400 font-semibold mr-2">{index + 1}.</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-deep-300">
+                    {getPhaseGuidance(sessionPhases[currentPhase])}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Next Phase Instructions (10 seconds before phase change) */}
+          {showNextPhaseInstructions && nextPhaseInstruction && (
+            <div className="mb-6 p-4 bg-ocean-900/20 rounded-lg border border-ocean-700">
+              <h3 className="text-lg font-semibold text-ocean-400 mb-3">
+                ⏰ Next Phase: {nextPhaseInstruction.title}
+              </h3>
+              <div className="space-y-3">
+                <p className="text-deep-300">{nextPhaseInstruction.description}</p>
+                <div>
+                  <h4 className="text-white font-semibold mb-2">Get Ready:</h4>
+                  <ol className="space-y-2">
+                    {nextPhaseInstruction.steps.map((step, index) => (
+                      <li key={index} className="text-deep-300 flex">
+                        <span className="text-ocean-400 font-semibold mr-2">{index + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Session Overview */}
+          {!isSessionActive && todaySession && sessionPhases.length > 0 && (
+            <div className="mb-6 p-4 bg-deep-800 rounded-lg border border-deep-700">
+              <h3 className="text-lg font-semibold text-white mb-3">
+                Session Overview
+              </h3>
+              <div className="space-y-2">
+                <div className="text-deep-300">
+                  <strong>Focus:</strong> {todaySession.focus}
+                </div>
+                <div className="text-deep-300">
+                  <strong>Total Phases:</strong> {sessionPhases.length}
+                </div>
+                <div className="text-deep-300">
+                  <strong>Estimated Duration:</strong> {formatTime(sessionPhases.reduce((total, phase) => total + phase.duration, 0))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Instructions when no session is active */}
+          {!isSessionActive && (
+            <div className="text-center text-deep-400">
+              <p>Start a session to see detailed instructions here.</p>
+            </div>
+          )}
+        </div>
 
         {/* Session Editor Modal */}
         {showSessionEditor && (

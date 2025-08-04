@@ -3,7 +3,7 @@ import { Calendar, Edit3, Plus, Save, X, Eye } from 'lucide-react';
 import dayjs from 'dayjs';
 import { formatTime } from '../utils/trainingLogic';
 
-const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleComplete, currentMaxHold }) => {
+const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleComplete, currentMaxHold, customSessions }) => {
   const [editingDay, setEditingDay] = useState(null);
   const [showCustomSessionModal, setShowCustomSessionModal] = useState(false);
   const [showSessionDetails, setShowSessionDetails] = useState(null);
@@ -605,13 +605,6 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
           <Calendar className="w-6 h-6" />
           Next 7 day training plan
         </h2>
-        <button
-          onClick={() => setShowCustomSessionModal(true)}
-          className="btn-secondary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Custom Session
-        </button>
       </div>
 
       {/* Week Grid */}
