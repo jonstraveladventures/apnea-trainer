@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Timer as TimerIcon, SkipForward, Settings, Edit3, Save, X } from 'lucide-react';
+import { Timer as TimerIcon, Settings, Edit3, Save, X } from 'lucide-react';
 import { formatTime, getWeekday, generateSessionDetails, generateSchedule, START_DATE } from '../utils/trainingLogic';
 import dayjs from 'dayjs';
 import MaxHoldModal from './MaxHoldModal';
+import SessionSelector from './SessionSelector';
+import SessionPreview from './SessionPreview';
+import PhaseDisplay from './PhaseDisplay';
+import ControlButtons from './ControlButtons';
+import SessionSummary from './SessionSummary';
+import { SESSION_TEMPLATES } from '../config/sessionTemplates';
+import { parseSessionPhases as parseSessionPhasesFromUtils } from '../utils/sessionParsers';
 
 const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, currentMaxHold, customSessions }) => {
+  // Local state management (reverted from context for debugging)
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(0);
   const [sessionTime, setSessionTime] = useState(0);
@@ -23,100 +31,7 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
   const [editingSessionType, setEditingSessionType] = useState(null);
   const [customSessionName, setCustomSessionName] = useState('');
   const [customSessionTemplate, setCustomSessionTemplate] = useState(null);
-  const [sessionTemplates, setSessionTemplates] = useState({
-    'Maximal Breath-Hold Training': {
-      stretchConfirmation: true,
-      tidalBreathingDuration: 120,
-      maximalAttempts: 3, // 2-3 maximal attempts
-      restDuration: 240, // 3-4 minute rest periods (4 minutes)
-      preparationDuration: 180, // 3 minutes preparation
-      recoveryDuration: 300 // 5 minutes recovery
-    },
-    'Max Breath-Hold': {
-      stretchConfirmation: true,
-      tidalBreathingDuration: 120,
-      maxHoldPercentages: [25, 35, 50, 65, 100, 100],
-      co2ToleranceSets: 3,
-      co2ToleranceHoldDuration: 45,
-      co2ToleranceRestDuration: 45
-    },
-    'Traditional CO₂ Tables': {
-      stretchConfirmation: true,
-      tidalBreathingDuration: 120,
-      holdCount: 5,
-      holdStartDuration: 45, // Start at 45 seconds (evidence-based)
-      holdIncrease: 15, // Increase by 15 seconds
-      restDuration: 45, // 1:1 rest ratio (evidence-based)
-      sets: 5
-    },
-    'CO₂ Tolerance': {
-      stretchConfirmation: true,
-      tidalBreathingDuration: 120,
-      holdCount: 5,
-      holdStartDuration: 45, // Start at 45 seconds (evidence-based)
-      holdIncrease: 15, // Increase by 15 seconds
-      restDuration: 45, // 1:1 rest ratio (evidence-based)
-      sets: 5
-    },
-    'Advanced CO₂ Table': {
-      stretchConfirmation: true,
-      tidalBreathingDuration: 120,
-      holdCount: 5,
-      holdPercentage: 62.5, // 62.5% of max hold time
-      restStartDuration: 120, // Start with 2 minutes rest
-      restDecrease: 22.5, // Decrease by 22.5 seconds each round
-      sets: 5
-    },
-    'O₂ Tolerance': {
-      stretchConfirmation: true,
-      tidalBreathingDuration: 120,
-      holdCount: 5, // More rounds for progression to 90-95%
-      holdStartPercentage: 60, // Start at 60% of max hold time
-      holdIncreasePercentage: 10, // Increase by 10-15% each round
-      maxHoldPercentage: 95, // Progress up to 95% of max hold time
-      restDuration: 180, // Fixed 3-minute rest periods (research-based)
-      sets: 5
-    },
-    'Breath Control': {
-      stretchConfirmation: false,
-      tidalBreathingDuration: 120,
-      diaphragmaticDuration: 600, // 10 minutes diaphragmatic breathing
-      alternateNostrilDuration: 300, // 5 minutes alternate nostril
-      boxBreathingCycles: 8, // 8 cycles of box breathing
-      boxBreathingRest: 30, // 30 seconds rest between cycles
-      recoveryDuration: 120 // 2 minutes recovery
-    },
-    'Mental + Technique': {
-      stretchConfirmation: false,
-      tidalBreathingDuration: 120,
-      visualizationDuration: 900, // 15 minutes guided visualization
-      mindfulnessDuration: 600, // 10 minutes mindfulness
-      progressiveRelaxationDuration: 600, // 10 minutes PMR
-      mindfulHoldCount: 2, // 2 mindful holds
-      mindfulHoldPercentage: 60, // 60% of max hold
-      recoveryDuration: 180 // 3 minutes recovery between holds
-    },
-    'Recovery & Flexibility': {
-      stretchConfirmation: false,
-      tidalBreathingDuration: 120,
-      diaphragmStretchCount: 3,
-      diaphragmStretchDuration: 30,
-      sideStretchCount: 2,
-      sideStretchDuration: 45,
-      boxBreathingDuration: 300, // 5 minutes box breathing
-      recoveryDuration: 180
-    },
-    'Comfortable CO₂ Training': {
-      stretchConfirmation: true,
-      preparationDuration: 300, // 5 minutes preparation
-      diaphragmaticDuration: 180, // 3 minutes diaphragmatic breathing
-      boxBreathingDuration: 120, // 2 minutes box breathing
-      holdPercentage: 40, // 40% of max hold time
-      holdCount: 7, // 7 rounds maximum
-      restPattern: [120, 105, 90, 75, 60, 75, 90], // Decreasing rest periods in seconds
-      recoveryDuration: 300 // 5 minutes recovery
-    }
-  });
+  const [sessionTemplates, setSessionTemplates] = useState(SESSION_TEMPLATES);
   const intervalRef = useRef(null);
   const [stretchConfirmed, setStretchConfirmed] = useState(false);
   const [maxHoldCompleted, setMaxHoldCompleted] = useState(false);
@@ -355,9 +270,14 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
     if (isRunning) {
       intervalRef.current = setInterval(() => {
         setTime(prev => prev + 1);
-        if (isSessionActive && stretchConfirmed) {
+        if (isSessionActive) {
           setSessionTime(prev => prev + 1);
+          
+          // Only increment phase time if not on stretch confirmation phase
+          const currentPhaseData = sessionPhases[currentPhase];
+          if (currentPhaseData && currentPhaseData.type !== 'stretch_confirmation') {
           setPhaseTime(prev => prev + 1);
+          }
           
           // Check if current phase is complete
           if (sessionPhases[currentPhase]) {
@@ -365,7 +285,7 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
             
             // Show next phase instructions 10 seconds before phase ends
             if (currentPhaseData.duration > 0 && phaseTime >= currentPhaseData.duration - 10) {
-              if (currentPhase < sessionPhases.length - 1) {
+                if (currentPhase < sessionPhases.length - 1) {
                 const nextPhase = sessionPhases[currentPhase + 1];
                 const nextExerciseType = getExerciseTypeFromPhase(nextPhase);
                 if (nextExerciseType && exerciseInstructions[nextExerciseType]) {
@@ -436,17 +356,51 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
     setSessionSummary(null);
   };
 
+  const handleSessionTypeChange = (newSessionType) => {
+    setSelectedSessionType(newSessionType);
+    setHasUserChangedSession(true);
+  };
+
+  const handleStretchConfirm = () => {
+    setStretchConfirmed(true);
+    if (currentPhase < sessionPhases.length - 1) {
+      setCurrentPhase(prev => prev + 1);
+      setPhaseTime(0);
+      setIsRestPhase(sessionPhases[currentPhase + 1]?.type === 'rest');
+    } else {
+      endSession();
+    }
+  };
+
+  const handleMaxHoldComplete = () => {
+    setMaxHoldCompleted(true);
+    if (currentPhase < sessionPhases.length - 1) {
+      setCurrentPhase(prev => prev + 1);
+      setPhaseTime(0);
+      setIsRestPhase(sessionPhases[currentPhase + 1]?.type === 'rest');
+    } else {
+      endSession();
+    }
+  };
+
+  const handleSkipPhase = () => {
+    if (currentPhase < sessionPhases.length - 1) {
+      setCurrentPhase(prev => prev + 1);
+      setPhaseTime(0);
+      setIsRestPhase(sessionPhases[currentPhase + 1]?.type === 'rest');
+    }
+  };
+
   // Parse session details into phases
   const parseSessionPhases = (focus, maxHoldSeconds) => {
-    const phases = [];
-    
     // Check if this is a custom session
     if (customSessions && customSessions[focus]) {
       const customSession = customSessions[focus];
+      const phases = [];
       
       // Add stretch confirmation and tidal breathing if enabled
       if (customSession.stretchConfirmation) {
-        phases.push({ 
+          phases.push({ 
           type: 'stretch_confirmation', 
           duration: 0, 
           description: 'Stretch Confirmation',
@@ -477,7 +431,7 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
           duration = Math.round((phase.maxHoldPercentage / 100) * maxHoldSeconds);
         }
         
-        phases.push({
+          phases.push({ 
           type: phase.type,
           duration: duration,
           description: phase.description || `${phase.type.charAt(0).toUpperCase() + phase.type.slice(1)} Phase`,
@@ -488,390 +442,9 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       return phases;
     }
     
+    // Use the modular session parser for built-in session types
     const template = sessionTemplates[focus] || {};
-    
-    // Add stretch confirmation phase for all sessions if enabled
-    if (template.stretchConfirmation) {
-      phases.push({ type: 'stretch_confirmation', duration: 0, description: 'Stretch Confirmation' });
-    }
-    
-    // Add tidal breathing phase for all sessions if enabled
-    if (template.tidalBreathingDuration) {
-      phases.push({ 
-        type: 'tidal_breathing', 
-        duration: template.tidalBreathingDuration, 
-        description: `Tidal Breathing (${formatTime(template.tidalBreathingDuration)})`,
-        isTidalBreathing: true
-      });
-    }
-    
-    switch (focus) {
-      case 'Maximal Breath-Hold Training':
-        // Evidence-based maximal breath-hold training
-        const maximalAttempts = template.maximalAttempts || 3;
-        const maximalRestDuration = template.restDuration || 240; // 3-4 minute rest periods
-        
-        for (let i = 0; i < maximalAttempts; i++) {
-          phases.push({ 
-            type: 'max_hold', 
-            duration: 0, // Maximal holds are indefinite (user stops when needed)
-            description: `Maximal Breath-Hold Attempt ${i + 1}/${maximalAttempts}`,
-            isMaximalHold: true,
-            instructions: 'Perform a maximal breath-hold. Stop at first sign of discomfort or when you reach your limit.'
-          });
-          
-          if (i < maximalAttempts - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: maximalRestDuration, 
-              description: `Rest ${i + 1}/${maximalAttempts - 1} (${formatTime(maximalRestDuration)})`,
-              isMaximalRest: true
-            });
-          }
-        }
-        
-        // Add recovery phase
-        if (template.recoveryDuration) {
-          phases.push({ 
-            type: 'recovery', 
-            duration: template.recoveryDuration, 
-            description: `Recovery (${formatTime(template.recoveryDuration)})`,
-            isMaximalRecovery: true
-          });
-        }
-        break;
-        
-      case 'Traditional CO₂ Tables':
-        // Traditional CO₂ tolerance training
-        const co2HoldCount = template.holdCount || 5;
-        const co2HoldStart = template.holdStartDuration || 45;
-        const co2HoldIncrease = template.holdIncrease || 15;
-        const co2RestDuration = template.restDuration || 45;
-        
-        for (let i = 0; i < co2HoldCount; i++) {
-          const holdTime = co2HoldStart + (i * co2HoldIncrease);
-          phases.push({ 
-            type: 'hold', 
-            duration: holdTime, 
-            description: `Traditional CO₂ Hold ${i + 1}/${co2HoldCount} (${formatTime(holdTime)})` 
-          });
-          if (i < co2HoldCount - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: co2RestDuration, 
-              description: `Traditional CO₂ Rest ${i + 1}/${co2HoldCount - 1} (${formatTime(co2RestDuration)})` 
-            });
-          }
-        }
-        break;
-        
-      case 'CO₂ Tolerance':
-        // Legacy CO₂ tolerance training (same as Traditional CO₂ Tables)
-        const legacyCo2HoldCount = template.holdCount || 5;
-        const legacyCo2HoldStart = template.holdStartDuration || 45;
-        const legacyCo2HoldIncrease = template.holdIncrease || 15;
-        const legacyCo2RestDuration = template.restDuration || 45;
-        
-        for (let i = 0; i < legacyCo2HoldCount; i++) {
-          const holdTime = legacyCo2HoldStart + (i * legacyCo2HoldIncrease);
-          phases.push({ 
-            type: 'hold', 
-            duration: holdTime, 
-            description: `CO₂ Hold ${i + 1}/${legacyCo2HoldCount} (${formatTime(holdTime)})` 
-          });
-          if (i < legacyCo2HoldCount - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: legacyCo2RestDuration, 
-              description: `CO₂ Rest ${i + 1}/${legacyCo2HoldCount - 1} (${formatTime(legacyCo2RestDuration)})` 
-            });
-          }
-        }
-        break;
-        
-      case 'Breath Control':
-        // Evidence-based breath control training using template
-        const breathTemplate = template;
-        phases.push({ 
-          type: 'breathing', 
-          duration: breathTemplate.diaphragmaticDuration || 600, 
-          description: `Diaphragmatic Breathing (${formatTime(breathTemplate.diaphragmaticDuration || 600)})` 
-        });
-        phases.push({ 
-          type: 'breathing', 
-          duration: breathTemplate.alternateNostrilDuration || 300, 
-          description: `Alternate Nostril Breathing (${formatTime(breathTemplate.alternateNostrilDuration || 300)})` 
-        });
-        const boxCycles = breathTemplate.boxBreathingCycles || 8;
-        const boxRest = breathTemplate.boxBreathingRest || 30;
-        for (let i = 0; i < boxCycles; i++) {
-          phases.push({ 
-            type: 'box', 
-            duration: 16, 
-            description: `Box Breathing ${i + 1}/${boxCycles} (4-4-4-4)` 
-          });
-          if (i < boxCycles - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: boxRest, 
-              description: `Rest ${i + 1}/${boxCycles - 1} (${formatTime(boxRest)})` 
-            });
-          }
-        }
-        if (breathTemplate.recoveryDuration) {
-          phases.push({ 
-            type: 'recovery', 
-            duration: breathTemplate.recoveryDuration, 
-            description: `Recovery (${formatTime(breathTemplate.recoveryDuration)})` 
-          });
-        }
-        break;
-        
-      case 'O₂ Tolerance':
-        // Evidence-based O₂ tolerance training with progression to 90-95%
-        const o2HoldCount = template.holdCount || 5;
-        const o2HoldStartPercentage = template.holdStartPercentage || 60; // Start at 60% of max hold time
-        const o2HoldIncreasePercentage = template.holdIncreasePercentage || 10; // Increase by 10-15% each round
-        const o2MaxHoldPercentage = template.maxHoldPercentage || 95; // Progress up to 95% of max hold time
-        const o2RestDuration = template.restDuration || 180; // Fixed 3-minute rest periods
-        
-        for (let i = 0; i < o2HoldCount; i++) {
-          // Calculate hold percentage for this round
-          const holdPercentage = Math.min(
-            o2HoldStartPercentage + (i * o2HoldIncreasePercentage),
-            o2MaxHoldPercentage
-          );
-          const holdTime = Math.round(maxHoldSeconds * (holdPercentage / 100));
-          
-          phases.push({ 
-            type: 'hold', 
-            duration: holdTime, 
-            description: `O₂ Hold ${i + 1}/${o2HoldCount} (${holdPercentage}% of max - ${formatTime(holdTime)})`,
-            isO2Tolerance: true
-          });
-          
-          if (i < o2HoldCount - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: o2RestDuration, 
-              description: `O₂ Rest ${i + 1}/${o2HoldCount - 1} (${formatTime(o2RestDuration)})`,
-              isO2Tolerance: true
-            });
-          }
-        }
-        break;
-        
-      case 'Mental + Technique':
-        // Evidence-based mental training using template
-        const mentalTemplate = template;
-        phases.push({ 
-          type: 'visualization', 
-          duration: mentalTemplate.visualizationDuration || 900, 
-          description: `Guided Visualization (${formatTime(mentalTemplate.visualizationDuration || 900)})` 
-        });
-        phases.push({ 
-          type: 'breathing', 
-          duration: mentalTemplate.mindfulnessDuration || 600, 
-          description: `Mindfulness Breathing (${formatTime(mentalTemplate.mindfulnessDuration || 600)})` 
-        });
-        phases.push({ 
-          type: 'breathing', 
-          duration: mentalTemplate.progressiveRelaxationDuration || 600, 
-          description: `Progressive Muscle Relaxation (${formatTime(mentalTemplate.progressiveRelaxationDuration || 600)})` 
-        });
-        const mindfulHoldCount = mentalTemplate.mindfulHoldCount || 2;
-        const mindfulHoldPercentage = mentalTemplate.mindfulHoldPercentage || 60;
-        const recoveryDuration = mentalTemplate.recoveryDuration || 180;
-        for (let i = 0; i < mindfulHoldCount; i++) {
-          const holdTime = Math.round(maxHoldSeconds * (mindfulHoldPercentage / 100));
-          phases.push({ 
-            type: 'hold', 
-            duration: holdTime, 
-            description: `Mindful Hold ${i + 1}/${mindfulHoldCount} (${formatTime(holdTime)})` 
-          });
-          if (i < mindfulHoldCount - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: recoveryDuration, 
-              description: `Recovery ${i + 1}/${mindfulHoldCount - 1} (${formatTime(recoveryDuration)})` 
-            });
-          }
-        }
-        break;
-        
-      case 'Advanced CO₂ Table':
-        // Advanced CO₂ table with decreasing rest periods
-        const advancedHoldCount = template.holdCount || 5;
-        const advancedHoldPercentage = template.holdPercentage || 62.5;
-        const advancedRestStart = template.restStartDuration || 120;
-        const advancedRestDecrease = template.restDecrease || 22.5;
-        
-        for (let i = 0; i < advancedHoldCount; i++) {
-          const holdTime = Math.round(maxHoldSeconds * (advancedHoldPercentage / 100));
-          phases.push({ 
-            type: 'hold', 
-            duration: holdTime, 
-            description: `Advanced CO₂ Hold ${i + 1}/${advancedHoldCount} (${formatTime(holdTime)})`,
-            isAdvancedCo2: true
-          });
-          
-          if (i < advancedHoldCount - 1) {
-            const restTime = Math.round(Math.max(30, advancedRestStart - (i * advancedRestDecrease)));
-            phases.push({ 
-              type: 'rest', 
-              duration: restTime, 
-              description: `Advanced CO₂ Rest ${i + 1}/${advancedHoldCount - 1} (${formatTime(restTime)})`,
-              isAdvancedCo2: true
-            });
-          }
-        }
-        break;
-        
-      case 'Max Breath-Hold':
-        // Use template or default values
-        const maxHoldPercentages = template.maxHoldPercentages || [25, 35, 50, 65, 100, 100];
-        
-        // Progressive max hold phases
-        for (let i = 0; i < maxHoldPercentages.length; i++) {
-          const percentage = maxHoldPercentages[i];
-          
-          // Max hold phase
-          const holdDuration = Math.round(maxHoldSeconds * (percentage / 100));
-          phases.push({ 
-            type: percentage === 100 ? 'max_hold' : 'hold', // Use 'hold' for fixed times, 'max_hold' for indefinite
-            duration: holdDuration,
-            description: percentage === 100 ? 'Max Hold' : `${percentage}% of max`,
-            phaseIndex: i,
-            percentage: percentage,
-            isMaxHold: percentage === 100
-          });
-        }
-        
-        // CO₂ Tolerance Training after max holds
-        const co2ToleranceSets = template.co2ToleranceSets || 3;
-        const co2ToleranceHoldDuration = template.co2ToleranceHoldDuration || 45;
-        const co2ToleranceRestDuration = template.co2ToleranceRestDuration || 45;
-        
-        for (let i = 0; i < co2ToleranceSets; i++) {
-          phases.push({ 
-            type: 'hold', 
-            duration: co2ToleranceHoldDuration, 
-            description: `CO₂ Tolerance Hold ${i + 1}/${co2ToleranceSets}`,
-            isCo2Tolerance: true
-          });
-          
-          if (i < co2ToleranceSets - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: co2ToleranceRestDuration, 
-              description: `CO₂ Tolerance Rest ${i + 1}/${co2ToleranceSets - 1}`,
-              isCo2Tolerance: true
-            });
-          }
-        }
-        break;
-        
-      case 'Recovery & Flexibility':
-        // Recovery and flexibility training using template
-        const recoveryTemplate = template;
-        const diaphragmStretchCount = recoveryTemplate.diaphragmStretchCount || 3;
-        const diaphragmStretchDuration = recoveryTemplate.diaphragmStretchDuration || 30;
-        const sideStretchCount = recoveryTemplate.sideStretchCount || 2;
-        const sideStretchDuration = recoveryTemplate.sideStretchDuration || 45;
-        const boxBreathingDuration = recoveryTemplate.boxBreathingDuration || 300;
-        
-        // Diaphragm stretches
-        for (let i = 0; i < diaphragmStretchCount; i++) {
-          phases.push({ 
-            type: 'stretch', 
-            duration: diaphragmStretchDuration, 
-            description: `Diaphragm Stretch ${i + 1}/${diaphragmStretchCount} (${formatTime(diaphragmStretchDuration)})`,
-            isRecovery: true
-          });
-        }
-        
-        // Side stretches
-        for (let i = 0; i < sideStretchCount; i++) {
-          phases.push({ 
-            type: 'stretch', 
-            duration: sideStretchDuration, 
-            description: `Side Stretch ${i + 1}/${sideStretchCount} (${formatTime(sideStretchDuration)})`,
-            isRecovery: true
-          });
-        }
-        
-        // Box breathing
-        phases.push({ 
-          type: 'box', 
-          duration: boxBreathingDuration, 
-          description: `Box Breathing (${formatTime(boxBreathingDuration)})`,
-          isRecovery: true
-        });
-        break;
-        
-      case 'Comfortable CO₂ Training':
-        // Phase 1: Preparation (5 minutes)
-        phases.push({ 
-          type: 'breathing', 
-          duration: template.diaphragmaticDuration || 180, 
-          description: 'Diaphragmatic Breathing (3 min)',
-          isComfortablePreparation: true
-        });
-        phases.push({ 
-          type: 'box', 
-          duration: template.boxBreathingDuration || 120, 
-          description: 'Box Breathing (2 min)',
-          isComfortablePreparation: true
-        });
-        
-        // Phase 2: Comfortable CO₂ Table (7 rounds)
-        const comfortableHoldDuration = Math.round(maxHoldSeconds * (template.holdPercentage || 40) / 100);
-        const restPattern = template.restPattern || [120, 105, 90, 75, 60, 75, 90];
-        
-        for (let i = 0; i < (template.holdCount || 7); i++) {
-          phases.push({ 
-            type: 'hold', 
-            duration: comfortableHoldDuration, 
-            description: `Comfortable Hold ${i + 1}/7 (${formatTime(comfortableHoldDuration)})`,
-            isComfortableCo2: true,
-            stopAtContractions: true
-          });
-          
-          if (i < (template.holdCount || 7) - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: restPattern[i], 
-              description: `Rest ${i + 1}/6 (${formatTime(restPattern[i])})`,
-              isComfortableCo2: true
-            });
-          }
-        }
-        
-        // Phase 3: Recovery (5 minutes)
-        phases.push({ 
-          type: 'breathing', 
-          duration: 120, 
-          description: 'Natural Tidal Breathing (2 min)',
-          isComfortableRecovery: true
-        });
-        phases.push({ 
-          type: 'breathing', 
-          duration: 180, 
-          description: 'Slow-Exhale Breathing (3 min)',
-          isComfortableRecovery: true
-        });
-        break;
-        
-      default:
-        phases.push({ type: 'hold', duration: 60, description: 'Default Hold' });
-    }
-    
-    // Add cool-down phase to all sessions
-    if (phases.length > 0) {
-      phases.push({ type: 'cooldown', duration: 180, description: 'Cool-down (3 min)' });
-    }
-    
-    return phases;
+    return parseSessionPhasesFromUtils(focus, template, maxHoldSeconds);
   };
 
   const handleMaxHoldSave = (maxHoldSeconds) => {
@@ -943,7 +516,7 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       totalTime: sessionTime,
       totalPhases: sessionPhases.length,
       completedPhases: currentPhase + 1,
-      focus: todaySession?.focus,
+      focus: selectedSessionType,
       maxHold: todaySession?.actualMaxHold
     };
     setSessionSummary(summary);
@@ -978,6 +551,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
     
     return 'text-blue-400';
   };
+
+
 
   const getPhaseIcon = (type) => {
     switch (type) {
@@ -1047,325 +622,67 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Panel - Timer */}
         <div className="card">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-6 flex items-center justify-center gap-2">
-              <TimerIcon className="w-6 h-6" />
-              Breath-Hold Timer
-            </h2>
-
-            {/* Session Type Selector */}
-            <div className="mb-6">
-              <label className="text-sm text-deep-300 mb-2 block">Session Type:</label>
-              <select
-                value={selectedSessionType}
-                onChange={(e) => {
-                  setSelectedSessionType(e.target.value);
-                  setHasUserChangedSession(true);
-                }}
-                className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
-                disabled={isSessionActive}
-              >
-                <optgroup label="🫁 CO₂ Training">
-                  <option value="Comfortable CO₂ Training">Comfortable CO₂ Training</option>
-                  <option value="Traditional CO₂ Tables">Traditional CO₂ Tables</option>
-                  <option value="CO₂ Tolerance">CO₂ Tolerance</option>
-                  <option value="Advanced CO₂ Table">Advanced CO₂ Table</option>
-                </optgroup>
-                <optgroup label="🫁 O₂ Training">
-                  <option value="O₂ Tolerance">O₂ Tolerance</option>
-                </optgroup>
-                <optgroup label="⚡ Max Training">
-                  <option value="Maximal Breath-Hold Training">Max Breath-Hold Option 1</option>
-                  <option value="Max Breath-Hold">Max Breath-Hold Option 2</option>
-                </optgroup>
-                <optgroup label="🧘 Mental & Technical">
-                  <option value="Breath Control">Breath Control</option>
-                  <option value="Mental + Technique">Mental + Technique</option>
-                </optgroup>
-                <optgroup label="🧘‍♀️ Recovery & Flexibility">
-                  <option value="Recovery & Flexibility">Recovery & Flexibility</option>
-                </optgroup>
-                {Object.keys(customSessions || {}).length > 0 && (
-                  <optgroup label="🎯 Custom Sessions">
-                    {Object.keys(customSessions || {}).map(sessionName => (
-                      <option key={sessionName} value={sessionName}>
-                        {sessionName}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-              </select>
-              {hasUserChangedSession && todaySession?.focus && selectedSessionType !== todaySession.focus && (
-                <div className="text-xs text-deep-400 mt-1">
-                  📅 Today's scheduled session: <span className="text-ocean-400">{todaySession.focus}</span>
-                </div>
-              )}
-            </div>
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-6 flex items-center justify-center gap-2">
+          <TimerIcon className="w-6 h-6" />
+          Breath-Hold Timer
+        </h2>
         
-        {/* Today's Session Info */}
-        {todaySession && (
-          <div className="mb-6 p-4 bg-deep-800 rounded-lg border border-deep-700">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-ocean-400 mb-1">
-                {todaySession.focus}
-              </div>
-              <div className="text-sm text-deep-400 mb-2">
-                {todaySession.sessionType}
-              </div>
-              {todaySession.actualMaxHold ? (
-                <div className="text-xs text-deep-500 mb-3">
-                  Based on max hold: {formatTime(todaySession.actualMaxHold)}
-                </div>
-              ) : (
-                <div className="text-xs text-deep-400 mb-3">
-                  No max hold time set
-                </div>
-              )}
+            {/* Session Type Selector */}
+            <SessionSelector
+              selectedSessionType={selectedSessionType}
+              onSessionTypeChange={handleSessionTypeChange}
+              hasUserChangedSession={hasUserChangedSession}
+              todaySession={todaySession}
+              isSessionActive={isSessionActive}
+              customSessions={customSessions}
+            />
+        
+
               
               {/* Session Preview */}
-              {todaySession.actualMaxHold && sessionPhases.length > 0 && !isSessionActive && (
-                <div className="mt-4">
-                  <div className="text-sm font-semibold text-deep-300 mb-2">Session Preview:</div>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {sessionPhases.map((phase, index) => (
-                      <div key={index} className="flex items-center justify-between text-xs bg-deep-700 rounded px-2 py-1">
-                        <div className="flex items-center gap-2">
-                          <span>{getPhaseIcon(phase.type)}</span>
-                          <span className="text-deep-300">{phase.description}</span>
-                        </div>
-                        <span className="text-deep-400 font-mono">
-                          {phase.type === 'max_hold' && phase.percentage === 100 ? 'Max' : formatTime(phase.duration)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-xs text-deep-500 mt-2">
-                    Total session time: {formatTime(sessionPhases.reduce((total, phase) => total + phase.duration, 0))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <SessionPreview
+          sessionPhases={sessionPhases}
+          actualMaxHold={todaySession?.actualMaxHold}
+          isSessionActive={isSessionActive}
+        />
 
         {/* Current Phase Display */}
-        {isSessionActive && sessionPhases[currentPhase] && (
-          <div className="mb-6 p-4 bg-deep-800 rounded-lg border border-deep-700">
-            <div className="text-center">
-              <div className="text-2xl mb-2">
-                {getPhaseIcon(sessionPhases[currentPhase].type)}
-              </div>
-              <div className="text-lg font-semibold text-white mb-1">
-                {sessionPhases[currentPhase].description}
-              </div>
-              <div className="text-sm text-deep-400 mb-2">
-                Phase {currentPhase + 1} of {sessionPhases.length}
-              </div>
-              
-              {/* Stretch Confirmation */}
-              {sessionPhases[currentPhase].type === 'stretch_confirmation' && (
-                <div className="mb-4">
-                  <div className="text-sm text-deep-300 mb-3">
-                    Have you completed your stretching routine?
-                  </div>
-                  <button
-                    onClick={() => {
-                      setStretchConfirmed(true);
-                      if (currentPhase < sessionPhases.length - 1) {
-                        setCurrentPhase(prev => prev + 1);
-                        setPhaseTime(0);
-                        setIsRestPhase(sessionPhases[currentPhase + 1]?.type === 'rest');
-                      } else {
-                        endSession();
-                      }
-                    }}
-                    className="btn-primary px-6 py-2"
-                  >
-                    Yes, I'm Ready
-                  </button>
-                </div>
-              )}
-              
-              {/* Max Hold Completion - Only for 100% max holds */}
-              {sessionPhases[currentPhase].type === 'max_hold' && sessionPhases[currentPhase].isMaxHold && (
-                <div className="mb-4">
-                  <div className="text-sm text-deep-300 mb-3">
-                    Press the button when you have completed your max hold
-                  </div>
-                  <button
-                    onClick={() => setMaxHoldCompleted(true)}
-                    className="btn-primary px-6 py-2"
-                  >
-                    Hold Completed
-                  </button>
-                </div>
-              )}
-              
-              {/* Phase Progress Bar - Only show for timed phases */}
-              {sessionPhases[currentPhase].duration > 0 && (
-                <>
-                  <div className="w-full bg-deep-700 rounded-full h-3 mb-3">
-                    <div 
-                      className={`h-3 rounded-full transition-all duration-300 ${getTimerColor()}`}
-                      style={{ width: `${(phaseTime / sessionPhases[currentPhase].duration) * 100}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-sm text-deep-400 mb-3">
-                    {formatTime(phaseTime)} / {formatTime(sessionPhases[currentPhase].duration)}
-                  </div>
-                </>
-              )}
-              
-
-              
-              {/* Session Progress */}
-              <div className="border-t border-deep-700 pt-3">
-                <div className="text-xs text-deep-500 mb-2">Session Progress</div>
-                <div className="w-full bg-deep-700 rounded-full h-2 mb-2">
-                  <div 
-                    className="bg-ocean-400 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentPhase + (sessionPhases[currentPhase].duration > 0 ? (phaseTime / sessionPhases[currentPhase].duration) : 0)) / sessionPhases.length) * 100}%` }}
-                  ></div>
-                </div>
-                <div className="text-xs text-deep-400">
-                  {Math.round(((currentPhase + (sessionPhases[currentPhase].duration > 0 ? (phaseTime / sessionPhases[currentPhase].duration) : 0)) / sessionPhases.length) * 100)}% complete
-                </div>
-              </div>
-              
-              {/* Next Phase Preview */}
-              {currentPhase < sessionPhases.length - 1 && (
-                <div className="border-t border-deep-700 pt-3 mt-3">
-                  <div className="text-xs text-deep-500 mb-1">Next: {sessionPhases[currentPhase + 1].description}</div>
-                  <div className="text-xs text-deep-400">
-                    {getPhaseIcon(sessionPhases[currentPhase + 1].type)} {formatTime(sessionPhases[currentPhase + 1].duration)}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <PhaseDisplay
+          currentPhase={currentPhase}
+          sessionPhases={sessionPhases}
+          phaseTime={phaseTime}
+          isSessionActive={isSessionActive}
+          stretchConfirmed={stretchConfirmed}
+          onStretchConfirm={handleStretchConfirm}
+          onMaxHoldComplete={handleMaxHoldComplete}
+        />
 
         {/* Session Completion Summary */}
-        {sessionCompleted && sessionSummary && (
-          <div className="mb-6 p-4 bg-green-900/20 border border-green-700 rounded-lg">
-            <div className="text-center">
-              <div className="text-2xl mb-2">🎉</div>
-              <div className="text-lg font-semibold text-green-400 mb-2">
-                Session Complete!
-              </div>
-              <div className="space-y-1 text-sm text-deep-300">
-                <div>Focus: {sessionSummary.focus}</div>
-                <div>Total Time: {formatTime(sessionSummary.totalTime)}</div>
-                <div>Phases Completed: {sessionSummary.completedPhases}/{sessionSummary.totalPhases}</div>
-                <div>Based on Max Hold: {formatTime(sessionSummary.maxHold)}</div>
-              </div>
-              <div className="flex gap-2 justify-center mt-3">
-                <button
-                  onClick={resetTimer}
-                  className="btn-secondary text-xs"
-                >
-                  Reset Timer
-                </button>
-                <button
-                  onClick={resetSessionCompletion}
-                  className="btn-secondary text-xs"
-                >
-                  Remove Completion
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <SessionSummary
+          sessionCompleted={sessionCompleted}
+          sessionSummary={sessionSummary}
+          onResetTimer={resetTimer}
+          onResetSessionCompletion={resetSessionCompletion}
+        />
 
 
 
-        {/* Phase Timer Display */}
-        {isSessionActive && sessionPhases[currentPhase] && (
-          <div className="mb-6">
-            <div className="text-sm text-deep-400 mb-2">
-              {sessionPhases[currentPhase].type === 'max_hold' ? 'Hold Time' : 'Phase Time'}
-            </div>
-            <div className="text-2xl font-mono text-ocean-400">
-              {sessionPhases[currentPhase].type === 'max_hold' 
-                ? formatTime(phaseTime) // Count up for max holds
-                : formatTime(sessionPhases[currentPhase].duration - phaseTime) // Count down for other phases
-              }
-            </div>
-          </div>
-        )}
 
-        {/* Current Phase Guidance */}
-        {isSessionActive && sessionPhases[currentPhase] && (
-          <div className="mb-6 p-4 bg-deep-800/50 border border-deep-700 rounded-lg">
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {sessionPhases[currentPhase].description}
-            </h3>
-            <div className="text-deep-300 text-sm">
-              {getPhaseGuidance(sessionPhases[currentPhase])}
-            </div>
-          </div>
-        )}
 
         {/* Control Buttons */}
-        <div className="flex gap-3 justify-center flex-wrap">
-          {!isSessionActive ? (
-            <button
-              onClick={startSession}
-              className="btn-primary flex items-center gap-2"
-            >
-              <Play className="w-4 h-4" />
-              Start Session
-            </button>
-          ) : isPaused ? (
-            <button
-              onClick={resumeSession}
-              className="btn-primary flex items-center gap-2"
-            >
-              <Play className="w-4 h-4" />
-              Resume
-            </button>
-          ) : (
-            <button
-              onClick={pauseSession}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <Pause className="w-4 h-4" />
-              Pause
-            </button>
-          )}
-          
-          {isSessionActive && (
-            <button
-              onClick={endSession}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <X className="w-4 h-4" />
-              End Session
-            </button>
-          )}
-          
-          {isSessionActive && sessionPhases.length > 0 && currentPhase < sessionPhases.length - 1 && (
-            <button
-              onClick={() => {
-                setCurrentPhase(prev => prev + 1);
-                setPhaseTime(0);
-                setIsRestPhase(sessionPhases[currentPhase + 1]?.type === 'rest');
-              }}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <SkipForward className="w-4 h-4" />
-              Skip Phase
-            </button>
-          )}
-          
-          <button
-            onClick={resetTimer}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Reset
-          </button>
-        </div>
+        <ControlButtons
+          isSessionActive={isSessionActive}
+          isPaused={isPaused}
+          sessionPhases={sessionPhases}
+          currentPhase={currentPhase}
+          onStartSession={startSession}
+          onPauseSession={pauseSession}
+          onResumeSession={resumeSession}
+          onEndSession={endSession}
+          onSkipPhase={handleSkipPhase}
+          onResetTimer={resetTimer}
+        />
 
 
 

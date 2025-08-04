@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, Edit3, Plus, Save, X, Eye } from 'lucide-react';
 import dayjs from 'dayjs';
 import { formatTime } from '../utils/trainingLogic';
+import { getAllSessionTypes } from '../config/sessionTemplates';
 
 const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleComplete, currentMaxHold, customSessions }) => {
   const [editingDay, setEditingDay] = useState(null);
@@ -24,17 +25,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
   });
   const [customSessionBase, setCustomSessionBase] = useState('');
 
-  const sessionTypes = [
-    'Comfortable CO₂ Training',
-    'Traditional CO₂ Tables',
-    'Advanced CO₂ Table',
-    'O₂ Tolerance',
-    'Maximal Breath-Hold Training',
-    'Max Breath-Hold',
-    'Breath Control',
-    'Mental + Technique',
-    'Recovery & Flexibility'
-  ];
+  const sessionTypes = getAllSessionTypes();
 
   // Get next 7 days
   const getNext7Days = () => {

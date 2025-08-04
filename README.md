@@ -251,7 +251,7 @@ npm run dist-all
 ##### Max Breath-Hold Option 2
 - **Purpose**: Progressive training to increase your maximum breath-hold time
 - **Structure**: 
-  - Stretch confirmation before starting
+- Stretch confirmation before starting
   - 2-minute tidal breathing phase
   - Progressive holds at 25%, 35%, 50%, 65%, 100%, 100% of max
   - CO₂ tolerance training between max holds
@@ -363,13 +363,21 @@ apnea-trainer/
 │   └── index.html         # Main HTML file
 ├── src/                   # React source code
 │   ├── components/        # React components
-│   │   ├── Timer.js       # Session timer and controls
+│   │   ├── Timer.js       # Main timer component (refactored)
+│   │   ├── SessionSelector.js # Session type selection
+│   │   ├── SessionPreview.js # Session phase preview
+│   │   ├── PhaseDisplay.js # Active phase display
+│   │   ├── ControlButtons.js # Session control buttons
+│   │   ├── SessionSummary.js # Session completion summary
 │   │   ├── WeekPlan.js    # 7-day plan display
 │   │   ├── ProgressChart.js # Progress tracking
 │   │   ├── SessionCard.js # Individual session cards
 │   │   └── MaxHoldModal.js # Max hold input modal
+│   ├── config/            # Configuration files
+│   │   └── sessionTemplates.js # Centralized session templates
 │   ├── utils/             # Utility functions
-│   │   └── trainingLogic.js # Training session logic
+│   │   ├── trainingLogic.js # Training session logic
+│   │   └── sessionParsers.js # Modular session parsing
 │   ├── App.js             # Main React component
 │   └── index.js           # React entry point
 ├── package.json           # Dependencies and scripts
@@ -388,6 +396,19 @@ apnea-trainer/
 - **Local Storage**: Data persistence using Electron's file system
 - **Real-time Updates**: Dynamic session generation based on user parameters
 - **Modular Architecture**: Clean separation of concerns with reusable components
+- **Refactored Components**: Recently refactored for improved maintainability and modularity
+
+### Recent Technical Improvements (v1.1.0)
+- **Component Refactoring**: Extracted 5 focused components from the monolithic Timer component
+  - `SessionSelector`: Clean session type selection
+  - `SessionPreview`: Session phase overview
+  - `PhaseDisplay`: Active phase timer and guidance
+  - `ControlButtons`: Session control interface
+  - `SessionSummary`: Completion summary display
+- **Centralized Configuration**: Moved session templates to dedicated config files
+- **Modular Session Parsing**: Separated session parsing logic into focused utility modules
+- **Improved Code Organization**: Better separation of concerns and reduced component complexity
+- **Enhanced Maintainability**: Each component now has a single responsibility and can be tested independently
 
 ## 🤝 Contributing
 
@@ -411,7 +432,6 @@ This application incorporates training methodologies validated by peer-reviewed 
 
 - **Schagatay, E. et al. (1999).** "Effects of repeated apneas on apneic time and diving response in non-divers." *Undersea & Hyperbaric Medicine*, 26(3), 143-149.
 
-**Note**: This application incorporates training methodologies validated by peer-reviewed research in exercise physiology and diving medicine.
 
 ## 📄 License
 
@@ -430,7 +450,7 @@ This project was developed using [Cursor](https://cursor.sh/), an AI-powered cod
 
 ## 🆘 Support
 
-If you encounter any issues or have questions, please open an issue on GitHub or contact the maintainers.
+If you encounter any issues or have questions, please open an issue on GitHub or contact the maintainers. 
 
 ---
 
