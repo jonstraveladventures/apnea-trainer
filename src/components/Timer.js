@@ -45,9 +45,9 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       stretchConfirmation: true,
       tidalBreathingDuration: 120,
       holdCount: 4,
-      holdStartDuration: 60, // Start at 60% of max (evidence-based)
-      holdIncrease: 10, // Increase by 10 seconds
-      restDuration: 120, // 2:1 rest ratio for O₂ tolerance
+      holdStartDuration: 60, // Start at 60% of max (research-based)
+      holdIncrease: 15, // Increase by 15-30 second increments
+      restDuration: 180, // Fixed 3-minute rest periods (research-based)
       sets: 4
     },
     'Breath Control': {
@@ -484,18 +484,20 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
         break;
         
       case 'O₂ Tolerance':
-        // Evidence-based O₂ tolerance training
+        // Research-based O₂ tolerance training
         const o2HoldCount = template.holdCount || 4;
         const o2HoldStart = template.holdStartDuration || Math.round(maxHoldSeconds * 0.6);
-        const o2HoldIncrease = template.holdIncrease || 10;
-        const o2RestDuration = template.restDuration || Math.round(maxHoldSeconds * 1.5);
+        const o2HoldIncrease = template.holdIncrease || 15;
+        const o2RestDuration = template.restDuration || 180; // Fixed 3-minute rest periods
         
         for (let i = 0; i < o2HoldCount; i++) {
           const holdTime = o2HoldStart + (i * o2HoldIncrease);
+          // Cap at 80% of max hold time (research-based safety limit)
+          const cappedHoldTime = Math.min(holdTime, Math.round(maxHoldSeconds * 0.8));
           phases.push({ 
             type: 'hold', 
-            duration: holdTime, 
-            description: `O₂ Hold ${i + 1}/${o2HoldCount} (${formatTime(holdTime)})` 
+            duration: cappedHoldTime, 
+            description: `O₂ Hold ${i + 1}/${o2HoldCount} (${formatTime(cappedHoldTime)})` 
           });
           if (i < o2HoldCount - 1) {
             phases.push({ 

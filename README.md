@@ -24,7 +24,7 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 
 ### 🏊‍♂️ Comprehensive Training Sessions
 - **CO₂ Tolerance Training**: Progressive breath-hold tables with decreasing rest periods to build CO₂ tolerance
-- **O₂ Tolerance Training**: Extended breath-holds with long rest periods to improve oxygen utilization
+- **O₂ Tolerance Training**: Progressive breath-holds with fixed rest periods, capped at 80% of max hold time for safety
 - **Breath Control**: Advanced breathing techniques including diaphragmatic, alternate nostril, and box breathing
 - **Mental + Technique**: Visualization, mindfulness, and progressive relaxation for mental preparation
 - **Max Breath-Hold**: Progressive training with stretch confirmation and CO₂ tolerance integration
@@ -120,10 +120,14 @@ This will start both the React development server and the Electron application.
 - **Benefits**: Extends your breath-hold time by training your body to tolerate higher CO₂ levels
 
 ##### O₂ Tolerance Training
-- **Purpose**: Improve oxygen utilization and efficiency
-- **Structure**: Extended breath-holds with long rest periods (2:1 rest ratio)
-- **Example**: 4 holds at 60% of max hold time with 2-minute rest periods
-- **Benefits**: Teaches your body to use oxygen more efficiently
+- **Purpose**: Improve oxygen utilization and efficiency while maintaining safety
+- **Structure**: Progressive breath-holds with fixed rest periods (research-based approach)
+- **Safety Features**:
+  - **80% Cap**: Never exceeds 80% of max hold time for safety
+  - **Fixed Rest Periods**: Consistent 3-minute rest intervals (not ratios)
+  - **Progressive Structure**: Starts at 60% and increases by 15-second increments
+- **Example**: 4 holds starting at 60% of max, increasing by 15 seconds each, with 3-minute rest periods
+- **Benefits**: Teaches your body to use oxygen more efficiently while preventing overtraining
 
 ##### Breath Control
 - **Purpose**: Master various breathing techniques for better breath-hold preparation

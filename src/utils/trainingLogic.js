@@ -31,7 +31,7 @@ export function generateSessionDetails(weekday, maxHoldSeconds) {
   const details = {
     1: `5× progressive holds (45s → 75s). 1:1 rest ratio. ~25min total`,
     2: `10min diaphragmatic + 5min alternate nostril + 8× box breathing (4-4-4-4) + 2min recovery. ~25min total`,
-    3: `4× progressive holds (60% → 75% of max). 1.5:1 rest ratio. ~20min total`,
+    3: `4× progressive holds (60% → 75% of max, capped at 80%). Fixed 3min rest periods. ~25min total`,
     4: `15min visualization + 10min mindfulness + 10min PMR + 2× mindful holds (60% max). ~45min total`,
     5: `5× ${Math.round(maxHoldSeconds * 0.625)} sec holds. Rest: 2:00 → 0:30`,
     6: `2min tidal breathing + progressive holds: 25% → 35% → 50% → 65% → 2× max holds`,

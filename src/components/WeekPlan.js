@@ -400,15 +400,17 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
       case 'O₂ Tolerance':
         const o2HoldCount = template.holdCount || 4;
         const o2HoldStart = template.holdStartDuration || Math.round(maxHoldSeconds * 0.6);
-        const o2HoldIncrease = template.holdIncrease || 10;
-        const o2RestDuration = template.restDuration || Math.round(maxHoldSeconds * 1.5);
+        const o2HoldIncrease = template.holdIncrease || 15;
+        const o2RestDuration = template.restDuration || 180; // Fixed 3-minute rest periods
         
         for (let i = 0; i < o2HoldCount; i++) {
           const holdTime = o2HoldStart + (i * o2HoldIncrease);
+          // Cap at 80% of max hold time (research-based safety limit)
+          const cappedHoldTime = Math.min(holdTime, Math.round(maxHoldSeconds * 0.8));
           phases.push({ 
             type: 'hold', 
-            duration: holdTime, 
-            description: `O₂ Hold ${i + 1}/${o2HoldCount} (${formatTime(holdTime)})` 
+            duration: cappedHoldTime, 
+            description: `O₂ Hold ${i + 1}/${o2HoldCount} (${formatTime(cappedHoldTime)})` 
           });
           if (i < o2HoldCount - 1) {
             phases.push({ 
