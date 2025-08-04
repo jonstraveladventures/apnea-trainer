@@ -432,14 +432,16 @@ function App() {
   const [showPhaseCreator, setShowPhaseCreator] = useState(false);
   const [currentPhaseType, setCurrentPhaseType] = useState('');
   const [showWeeklyScheduleEditor, setShowWeeklyScheduleEditor] = useState(false);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [editingSessionType, setEditingSessionType] = useState(null);
   const [weeklySchedule, setWeeklySchedule] = useState({
-    monday: 'CO₂ Tolerance',
+    monday: 'Comfortable CO₂ Training',
     tuesday: 'Breath Control',
     wednesday: 'O₂ Tolerance',
     thursday: 'Mental + Technique',
     friday: 'Max Breath-Hold',
     saturday: 'Recovery & Flexibility',
-    sunday: 'CO₂ Tolerance'
+    sunday: 'Traditional CO₂ Tables'
   });
   const [newProfileName, setNewProfileName] = useState('');
   const [newProfileMaxHold, setNewProfileMaxHold] = useState('');
@@ -469,13 +471,13 @@ function App() {
       currentMaxHold: 240,
       customSessions: {},
       weeklySchedule: {
-        monday: 'CO₂ Tolerance',
+        monday: 'Comfortable CO₂ Training',
         tuesday: 'Breath Control',
         wednesday: 'O₂ Tolerance',
         thursday: 'Mental + Technique',
         friday: 'Max Breath-Hold',
         saturday: 'Recovery & Flexibility',
-        sunday: 'CO₂ Tolerance'
+        sunday: 'Traditional CO₂ Tables'
       }
     };
   };
@@ -492,13 +494,13 @@ function App() {
       setSessions(profileData.sessions || []);
       setCurrentMaxHold(profileData.currentMaxHold || null);
       setWeeklySchedule(profileData.weeklySchedule || {
-        monday: 'CO₂ Tolerance',
+        monday: 'Comfortable CO₂ Training',
         tuesday: 'Breath Control',
         wednesday: 'O₂ Tolerance',
         thursday: 'Mental + Technique',
         friday: 'Max Breath-Hold',
         saturday: 'Recovery & Flexibility',
-        sunday: 'CO₂ Tolerance'
+        sunday: 'Traditional CO₂ Tables'
       });
     }
   }, [currentProfile, profiles]);
@@ -712,13 +714,13 @@ function App() {
       currentMaxHold: maxHold,
       customSessions: {},
       weeklySchedule: {
-        monday: 'CO₂ Tolerance',
+        monday: 'Comfortable CO₂ Training',
         tuesday: 'Breath Control',
         wednesday: 'O₂ Tolerance',
         thursday: 'Mental + Technique',
         friday: 'Max Breath-Hold',
         saturday: 'Recovery & Flexibility',
-        sunday: 'CO₂ Tolerance'
+        sunday: 'Traditional CO₂ Tables'
       }
     };
     
@@ -1162,28 +1164,82 @@ function App() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-deep-800 rounded-lg border border-deep-700">
-                      <h3 className="text-lg font-semibold text-ocean-400 mb-2">CO₂ Tolerance</h3>
+                      <h3 className="text-lg font-semibold text-ocean-400 mb-2">Comfortable CO₂ Training</h3>
+                      <p className="text-deep-300 text-sm mb-3">
+                        Gradual CO₂ tolerance building without contractions, focusing on comfort and adaptation.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setEditingSessionType('Comfortable CO₂ Training');
+                          setShowTemplateEditor(true);
+                        }}
+                        className="btn-primary w-full text-sm"
+                      >
+                        Customize Comfortable CO₂ Training
+                      </button>
+                    </div>
+                    
+                    <div className="p-4 bg-deep-800 rounded-lg border border-deep-700">
+                      <h3 className="text-lg font-semibold text-ocean-400 mb-2">Traditional CO₂ Tables</h3>
                       <p className="text-deep-300 text-sm mb-3">
                         Progressive breath-hold tables with decreasing rest periods to build CO₂ tolerance.
                       </p>
                       <button
-                        onClick={() => setShowTemplateEditor(true)}
+                        onClick={() => {
+                          setEditingSessionType('Traditional CO₂ Tables');
+                          setShowTemplateEditor(true);
+                        }}
                         className="btn-primary w-full text-sm"
                       >
-                        Customize CO₂ Training
+                        Customize Traditional CO₂ Tables
+                      </button>
+                    </div>
+                    
+                    <div className="p-4 bg-deep-800 rounded-lg border border-deep-700">
+                      <h3 className="text-lg font-semibold text-ocean-400 mb-2">Advanced CO₂ Table</h3>
+                      <p className="text-deep-300 text-sm mb-3">
+                        Dynamic CO₂ tolerance training based on your current max hold time.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setEditingSessionType('Advanced CO₂ Table');
+                          setShowTemplateEditor(true);
+                        }}
+                        className="btn-primary w-full text-sm"
+                      >
+                        Customize Advanced CO₂ Table
                       </button>
                     </div>
                     
                     <div className="p-4 bg-deep-800 rounded-lg border border-deep-700">
                       <h3 className="text-lg font-semibold text-ocean-400 mb-2">O₂ Tolerance</h3>
                       <p className="text-deep-300 text-sm mb-3">
-                        Extended breath-holds with long rest periods to improve oxygen utilization.
+                        Progressive breath-holds with fixed rest periods, capped at 80% of max hold time for safety.
                       </p>
                       <button
-                        onClick={() => setShowTemplateEditor(true)}
+                        onClick={() => {
+                          setEditingSessionType('O₂ Tolerance');
+                          setShowTemplateEditor(true);
+                        }}
                         className="btn-primary w-full text-sm"
                       >
                         Customize O₂ Training
+                      </button>
+                    </div>
+                    
+                    <div className="p-4 bg-deep-800 rounded-lg border border-deep-700">
+                      <h3 className="text-lg font-semibold text-ocean-400 mb-2">Max Breath-Hold</h3>
+                      <p className="text-deep-300 text-sm mb-3">
+                        Progressive training with stretch confirmation and CO₂ tolerance integration.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setEditingSessionType('Max Breath-Hold');
+                          setShowTemplateEditor(true);
+                        }}
+                        className="btn-primary w-full text-sm"
+                      >
+                        Customize Max Breath-Hold
                       </button>
                     </div>
                     
@@ -1193,7 +1249,10 @@ function App() {
                         Advanced breathing techniques including diaphragmatic, alternate nostril, and box breathing.
                       </p>
                       <button
-                        onClick={() => setShowTemplateEditor(true)}
+                        onClick={() => {
+                          setEditingSessionType('Breath Control');
+                          setShowTemplateEditor(true);
+                        }}
                         className="btn-primary w-full text-sm"
                       >
                         Customize Breath Control
@@ -1206,17 +1265,50 @@ function App() {
                         Visualization, mindfulness, and progressive relaxation techniques for mental training.
                       </p>
                       <button
-                        onClick={() => setShowTemplateEditor(true)}
+                        onClick={() => {
+                          setEditingSessionType('Mental + Technique');
+                          setShowTemplateEditor(true);
+                        }}
                         className="btn-primary w-full text-sm"
                       >
                         Customize Mental Training
                       </button>
                     </div>
                     
+                    <div className="p-4 bg-deep-800 rounded-lg border border-deep-700">
+                      <h3 className="text-lg font-semibold text-ocean-400 mb-2">Recovery & Flexibility</h3>
+                      <p className="text-deep-300 text-sm mb-3">
+                        Stretching and recovery sessions for complete training and physical maintenance.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setEditingSessionType('Recovery & Flexibility');
+                          setShowTemplateEditor(true);
+                        }}
+                        className="btn-primary w-full text-sm"
+                      >
+                        Customize Recovery & Flexibility
+                      </button>
+                    </div>
+                    
                     {/* Custom Sessions */}
-                    {profiles[currentProfile]?.customSessions && Object.keys(profiles[currentProfile].customSessions).length > 0 && (
-                      <div className="mt-6">
-                        <h3 className="text-lg font-semibold text-ocean-400 mb-4">🎯 Custom Sessions</h3>
+                    <div className="mt-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-ocean-400">🎯 Custom Sessions</h3>
+                        <button
+                          onClick={() => {
+                            setCustomSessionName('');
+                            setCustomSessionDescription('');
+                            setCustomSessionPhases([]);
+                            setShowCustomSessionCreator(true);
+                          }}
+                          className="btn-primary text-sm px-4 py-2"
+                        >
+                          + Create Custom Session
+                        </button>
+                      </div>
+                      
+                      {profiles[currentProfile]?.customSessions && Object.keys(profiles[currentProfile].customSessions).length > 0 ? (
                         <div className="grid gap-4">
                           {Object.entries(profiles[currentProfile].customSessions).map(([sessionName, sessionData]) => (
                             <div key={sessionName} className="p-4 bg-deep-700 rounded-lg border border-deep-600">
@@ -1243,8 +1335,13 @@ function App() {
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="p-4 bg-deep-700 rounded-lg border border-deep-600 text-center">
+                          <p className="text-deep-300 text-sm">No custom sessions created yet.</p>
+                          <p className="text-deep-400 text-xs mt-1">Click "Create Custom Session" to get started.</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1388,8 +1485,15 @@ function App() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {currentProfile === id && (
+                        {currentProfile === id ? (
                           <span className="text-xs bg-ocean-600 text-white px-2 py-1 rounded">Active</span>
+                        ) : (
+                          <button
+                            onClick={() => switchProfile(id)}
+                            className="text-ocean-400 hover:text-ocean-300 text-sm"
+                          >
+                            Switch
+                          </button>
                         )}
                         {id !== 'default' && (
                           <button
@@ -1435,6 +1539,79 @@ function App() {
                     className="btn-primary px-4 py-2"
                   >
                     Create
+                  </button>
+                </div>
+              </div>
+
+              {/* Profile Import/Export */}
+              <div>
+                <h4 className="text-sm font-medium text-deep-300 mb-2">Import/Export Profiles</h4>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const result = await window.electronAPI.loadProfileFromFile();
+                        if (result.success && result.data) {
+                          const profileData = result.data;
+                          const profileId = `imported_${Date.now()}`;
+                          
+                          const newProfile = {
+                            ...profileData,
+                            id: profileId,
+                            created: profileData.created || new Date().toISOString(),
+                            lastUpdated: new Date().toISOString()
+                          };
+                          
+                          const updatedProfiles = {
+                            ...profiles,
+                            [profileId]: newProfile
+                          };
+                          
+                          setProfiles(updatedProfiles);
+                          setCurrentProfile(profileId);
+                          setNotification({
+                            message: `Profile "${profileData.name}" imported successfully!`,
+                            type: 'success',
+                            duration: 3000
+                          });
+                        }
+                      } catch (error) {
+                        setNotification({
+                          message: 'Failed to import profile',
+                          type: 'error',
+                          duration: 3000
+                        });
+                      }
+                    }}
+                    className="btn-secondary flex-1"
+                  >
+                    Import Profile
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const currentProfileData = profiles[currentProfile];
+                        if (currentProfileData) {
+                          const result = await window.electronAPI.saveProfileAs(currentProfileData);
+                          if (result.success) {
+                            setNotification({
+                              message: `Profile "${currentProfileData.name}" exported successfully!`,
+                              type: 'success',
+                              duration: 3000
+                            });
+                          }
+                        }
+                      } catch (error) {
+                        setNotification({
+                          message: 'Failed to export profile',
+                          type: 'error',
+                          duration: 3000
+                        });
+                      }
+                    }}
+                    className="btn-secondary flex-1"
+                  >
+                    Export Current Profile
                   </button>
                 </div>
               </div>
@@ -1798,6 +1975,419 @@ function App() {
                 </button>
                 <button
                   onClick={() => setShowWeeklyScheduleEditor(false)}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Template Editor Modal */}
+      {showTemplateEditor && editingSessionType && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-white">Customize {editingSessionType}</h3>
+              <button
+                onClick={() => {
+                  setShowTemplateEditor(false);
+                  setEditingSessionType(null);
+                }}
+                className="text-deep-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              <p className="text-deep-300">
+                Customize the parameters for {editingSessionType}. These settings will be saved to your current profile.
+              </p>
+              
+              <div className="bg-deep-700 rounded-lg p-4">
+                <h4 className="text-md font-semibold text-ocean-400 mb-3">Session Parameters</h4>
+                
+                {editingSessionType === 'Comfortable CO₂ Training' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Hold Percentage (%)</label>
+                        <input
+                          type="number"
+                          defaultValue="40"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="20"
+                          max="60"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Number of Rounds</label>
+                        <input
+                          type="number"
+                          defaultValue="7"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="5"
+                          max="10"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-deep-300">Preparation Duration (minutes)</label>
+                      <input
+                        type="number"
+                        defaultValue="5"
+                        className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                        min="3"
+                        max="10"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {editingSessionType === 'Traditional CO₂ Tables' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Number of Holds</label>
+                        <input
+                          type="number"
+                          defaultValue="5"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="3"
+                          max="10"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Starting Hold Duration (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="45"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="30"
+                          max="120"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Hold Increase (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="15"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="10"
+                          max="30"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Rest Duration (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="45"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="30"
+                          max="120"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {editingSessionType === 'O₂ Tolerance' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Number of Holds</label>
+                        <input
+                          type="number"
+                          defaultValue="4"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="3"
+                          max="8"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Starting Hold Duration (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="60"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="30"
+                          max="300"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Hold Increase (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="15"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="10"
+                          max="30"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Rest Duration (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="180"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="120"
+                          max="300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {editingSessionType === 'Breath Control' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Diaphragmatic Duration (minutes)</label>
+                        <input
+                          type="number"
+                          defaultValue="10"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="5"
+                          max="20"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Alternate Nostril Duration (minutes)</label>
+                        <input
+                          type="number"
+                          defaultValue="5"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="3"
+                          max="15"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Box Breathing Cycles</label>
+                        <input
+                          type="number"
+                          defaultValue="8"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="5"
+                          max="15"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Box Breathing Rest (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="30"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="15"
+                          max="60"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {editingSessionType === 'Mental + Technique' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Visualization Duration (minutes)</label>
+                        <input
+                          type="number"
+                          defaultValue="15"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="10"
+                          max="30"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Mindfulness Duration (minutes)</label>
+                        <input
+                          type="number"
+                          defaultValue="10"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="5"
+                          max="20"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Mindful Hold Count</label>
+                        <input
+                          type="number"
+                          defaultValue="2"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="1"
+                          max="5"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Mindful Hold Percentage (%)</label>
+                        <input
+                          type="number"
+                          defaultValue="60"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="40"
+                          max="80"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {editingSessionType === 'Max Breath-Hold' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-deep-300">Max Hold Percentages</label>
+                      <div className="text-xs text-deep-400 mb-2">
+                        Enter percentages separated by commas (e.g., 25,35,50,65,100,100)
+                      </div>
+                      <input
+                        type="text"
+                        defaultValue="25,35,50,65,100,100"
+                        className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">CO₂ Tolerance Sets</label>
+                        <input
+                          type="number"
+                          defaultValue="3"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="2"
+                          max="6"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">CO₂ Hold Duration (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="45"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="30"
+                          max="90"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {editingSessionType === 'Advanced CO₂ Table' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Number of Holds</label>
+                        <input
+                          type="number"
+                          defaultValue="6"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="4"
+                          max="10"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Starting Hold Duration (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="60"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="30"
+                          max="180"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Hold Increase (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="20"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="10"
+                          max="30"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Rest Decrease (seconds)</label>
+                        <input
+                          type="number"
+                          defaultValue="15"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="10"
+                          max="30"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-deep-300">Initial Rest Duration (seconds)</label>
+                      <input
+                        type="number"
+                        defaultValue="120"
+                        className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                        min="60"
+                        max="300"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {editingSessionType === 'Recovery & Flexibility' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Stretching Duration (minutes)</label>
+                        <input
+                          type="number"
+                          defaultValue="15"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="10"
+                          max="30"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Recovery Breathing Duration (minutes)</label>
+                        <input
+                          type="number"
+                          defaultValue="10"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="5"
+                          max="20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3 pt-4 border-t border-deep-700">
+                <button 
+                  onClick={() => {
+                    setNotification({
+                      message: `${editingSessionType} settings saved successfully!`,
+                      type: 'success',
+                      duration: 3000
+                    });
+                    setShowTemplateEditor(false);
+                    setEditingSessionType(null);
+                  }}
+                  className="btn-primary flex-1"
+                >
+                  Save Settings
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTemplateEditor(false);
+                    setEditingSessionType(null);
+                  }}
                   className="btn-secondary flex-1"
                 >
                   Cancel

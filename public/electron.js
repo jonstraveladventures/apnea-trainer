@@ -78,6 +78,53 @@ ipcMain.handle('load-data', async () => {
   }
 });
 
+// IPC handlers for file dialogs
+ipcMain.handle('save-profile-as', async (event, profileData) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save Profile As',
+      defaultPath: `${profileData.name}-profile.json`,
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+    
+    if (!result.canceled && result.filePath) {
+      fs.writeFileSync(result.filePath, JSON.stringify(profileData, null, 2));
+      return { success: true, filePath: result.filePath };
+    } else {
+      return { success: false, canceled: true };
+    }
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('load-profile-from-file', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Load Profile From File',
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    });
+    
+    if (!result.canceled && result.filePaths.length > 0) {
+      const filePath = result.filePaths[0];
+      const data = fs.readFileSync(filePath, 'utf8');
+      const profileData = JSON.parse(data);
+      return { success: true, data: profileData, filePath };
+    } else {
+      return { success: false, canceled: true };
+    }
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
 // Create application menu
 const template = [
   {
