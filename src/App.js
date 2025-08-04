@@ -435,7 +435,7 @@ function App() {
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   const [editingSessionType, setEditingSessionType] = useState(null);
   const [weeklySchedule, setWeeklySchedule] = useState({
-    monday: 'Comfortable CO₂ Training',
+    monday: 'Maximal Breath-Hold Training',
     tuesday: 'Breath Control',
     wednesday: 'O₂ Tolerance',
     thursday: 'Mental + Technique',
@@ -471,7 +471,7 @@ function App() {
       currentMaxHold: 240,
       customSessions: {},
       weeklySchedule: {
-        monday: 'Comfortable CO₂ Training',
+        monday: 'Maximal Breath-Hold Training',
         tuesday: 'Breath Control',
         wednesday: 'O₂ Tolerance',
         thursday: 'Mental + Technique',
@@ -494,7 +494,7 @@ function App() {
       setSessions(profileData.sessions || []);
       setCurrentMaxHold(profileData.currentMaxHold || null);
       setWeeklySchedule(profileData.weeklySchedule || {
-        monday: 'Comfortable CO₂ Training',
+        monday: 'Maximal Breath-Hold Training',
         tuesday: 'Breath Control',
         wednesday: 'O₂ Tolerance',
         thursday: 'Mental + Technique',
@@ -714,7 +714,7 @@ function App() {
       currentMaxHold: maxHold,
       customSessions: {},
       weeklySchedule: {
-        monday: 'Comfortable CO₂ Training',
+        monday: 'Maximal Breath-Hold Training',
         tuesday: 'Breath Control',
         wednesday: 'O₂ Tolerance',
         thursday: 'Mental + Technique',
@@ -765,7 +765,31 @@ function App() {
   };
 
   const exportData = () => {
-    const dataStr = JSON.stringify({ sessions, currentMaxHold }, null, 2);
+    const currentProfileData = profiles[currentProfile];
+    const exportData = {
+      sessions,
+      currentMaxHold,
+      customSessions: currentProfileData?.customSessions || {},
+      weeklySchedule: currentProfileData?.weeklySchedule || {},
+      profileName: currentProfileData?.name || 'Exported Profile',
+      exportDate: new Date().toISOString(),
+      // Include all training progress data
+      completedSessions: sessions.filter(s => s.completed),
+      totalSessions: sessions.length,
+      trainingHistory: sessions.map(s => ({
+        date: s.date,
+        focus: s.focus,
+        completed: s.completed,
+        actualMaxHold: s.actualMaxHold,
+        sessionTime: s.sessionTime,
+        notes: s.notes
+      })),
+      // Include profile metadata
+      profileCreated: currentProfileData?.created,
+      lastUpdated: currentProfileData?.lastUpdated
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
@@ -782,10 +806,50 @@ function App() {
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target.result);
+          
+          // Import basic data
           setSessions(data.sessions || []);
           setCurrentMaxHold(data.currentMaxHold || null);
+          
+          // Import custom sessions if they exist
+          if (data.customSessions && Object.keys(data.customSessions).length > 0) {
+            setProfiles(prev => ({
+              ...prev,
+              [currentProfile]: {
+                ...prev[currentProfile],
+                customSessions: {
+                  ...prev[currentProfile]?.customSessions,
+                  ...data.customSessions
+                }
+              }
+            }));
+            
+            setNotification({
+              message: `Imported ${Object.keys(data.customSessions).length} custom session(s) successfully!`,
+              type: 'success',
+              duration: 3000
+            });
+          }
+          
+          // Import weekly schedule if it exists
+          if (data.weeklySchedule) {
+            setWeeklySchedule(data.weeklySchedule);
+            setProfiles(prev => ({
+              ...prev,
+              [currentProfile]: {
+                ...prev[currentProfile],
+                weeklySchedule: data.weeklySchedule
+              }
+            }));
+          }
+          
         } catch (error) {
           console.error('Error parsing imported data:', error);
+          setNotification({
+            message: 'Failed to import data. Please check the file format.',
+            type: 'error',
+            duration: 3000
+          });
         }
       };
       reader.readAsText(file);
@@ -1214,7 +1278,7 @@ function App() {
                     <div className="p-4 bg-deep-800 rounded-lg border border-deep-700">
                       <h3 className="text-lg font-semibold text-ocean-400 mb-2">O₂ Tolerance</h3>
                       <p className="text-deep-300 text-sm mb-3">
-                        Progressive breath-holds with fixed rest periods, capped at 80% of max hold time for safety.
+                        Progressive breath-holds starting at 60% of max hold time, increasing by 10-15% each round, progressing up to 90-95% of max hold time (near personal maximum). Based on research showing O₂ tables should progress to near-maximum for optimal adaptation.
                       </p>
                       <button
                         onClick={() => {
@@ -1228,7 +1292,23 @@ function App() {
                     </div>
                     
                     <div className="p-4 bg-deep-800 rounded-lg border border-deep-700">
-                      <h3 className="text-lg font-semibold text-ocean-400 mb-2">Max Breath-Hold</h3>
+                      <h3 className="text-lg font-semibold text-ocean-400 mb-2">Max Breath-Hold Option 1</h3>
+                      <p className="text-deep-300 text-sm mb-3">
+                        Evidence-based training using maximal breath-holds for optimal physiological adaptation. 2-3 maximal attempts with 3-4 minute rest periods. Studies demonstrate 15-60% improvements in breath-hold duration.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setEditingSessionType('Maximal Breath-Hold Training');
+                          setShowTemplateEditor(true);
+                        }}
+                        className="btn-primary w-full text-sm"
+                      >
+                        Customize Max Breath-Hold Option 1
+                      </button>
+                    </div>
+                    
+                    <div className="p-4 bg-deep-800 rounded-lg border border-deep-700">
+                      <h3 className="text-lg font-semibold text-ocean-400 mb-2">Max Breath-Hold Option 2</h3>
                       <p className="text-deep-300 text-sm mb-3">
                         Progressive training with stretch confirmation and CO₂ tolerance integration.
                       </p>
@@ -1239,7 +1319,7 @@ function App() {
                         }}
                         className="btn-primary w-full text-sm"
                       >
-                        Customize Max Breath-Hold
+                        Customize Max Breath-Hold Option 2
                       </button>
                     </div>
                     
@@ -1569,8 +1649,9 @@ function App() {
                           
                           setProfiles(updatedProfiles);
                           setCurrentProfile(profileId);
+                          const customSessionCount = profileData.customSessions ? Object.keys(profileData.customSessions).length : 0;
                           setNotification({
-                            message: `Profile "${profileData.name}" imported successfully!`,
+                            message: `Profile "${profileData.name}" imported successfully!${customSessionCount > 0 ? ` (${customSessionCount} custom session(s) included)` : ''}`,
                             type: 'success',
                             duration: 3000
                           });
@@ -1594,11 +1675,12 @@ function App() {
                         if (currentProfileData) {
                           const result = await window.electronAPI.saveProfileAs(currentProfileData);
                           if (result.success) {
-                            setNotification({
-                              message: `Profile "${currentProfileData.name}" exported successfully!`,
-                              type: 'success',
-                              duration: 3000
-                            });
+                                                      const customSessionCount = currentProfileData.customSessions ? Object.keys(currentProfileData.customSessions).length : 0;
+                          setNotification({
+                            message: `Profile "${currentProfileData.name}" exported successfully!${customSessionCount > 0 ? ` (${customSessionCount} custom session(s) included)` : ''}`,
+                            type: 'success',
+                            duration: 3000
+                          });
                           }
                         }
                       } catch (error) {
@@ -2103,34 +2185,46 @@ function App() {
                         <label className="text-sm text-deep-300">Number of Holds</label>
                         <input
                           type="number"
-                          defaultValue="4"
+                          defaultValue="5"
                           className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
-                          min="3"
+                          min="4"
                           max="8"
                         />
                       </div>
                       <div>
-                        <label className="text-sm text-deep-300">Starting Hold Duration (seconds)</label>
+                        <label className="text-sm text-deep-300">Starting Hold Percentage (%)</label>
                         <input
                           type="number"
                           defaultValue="60"
                           className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
-                          min="30"
-                          max="300"
+                          min="50"
+                          max="70"
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm text-deep-300">Hold Increase (seconds)</label>
+                        <label className="text-sm text-deep-300">Hold Increase Percentage (%)</label>
                         <input
                           type="number"
-                          defaultValue="15"
+                          defaultValue="10"
                           className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
-                          min="10"
-                          max="30"
+                          min="8"
+                          max="15"
                         />
                       </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Maximum Hold Percentage (%)</label>
+                        <input
+                          type="number"
+                          defaultValue="95"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="85"
+                          max="100"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="text-sm text-deep-300">Rest Duration (seconds)</label>
                         <input
@@ -2141,6 +2235,11 @@ function App() {
                           max="300"
                         />
                       </div>
+                    </div>
+                    <div className="bg-deep-600 rounded p-3">
+                      <p className="text-xs text-deep-300">
+                        <strong>Research Note:</strong> Based on research showing O₂ tables should progress to near-maximum (90-95%) for optimal adaptation. Fixed rest periods maintain consistent recovery.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -2336,6 +2435,60 @@ function App() {
                         min="60"
                         max="300"
                       />
+                    </div>
+                  </div>
+                )}
+                
+                {editingSessionType === 'Maximal Breath-Hold Training' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Number of Maximal Attempts</label>
+                        <input
+                          type="number"
+                          defaultValue="3"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="2"
+                          max="5"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Rest Duration (minutes)</label>
+                        <input
+                          type="number"
+                          defaultValue="4"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="3"
+                          max="6"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-deep-300">Preparation Duration (minutes)</label>
+                        <input
+                          type="number"
+                          defaultValue="3"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="2"
+                          max="5"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-deep-300">Recovery Duration (minutes)</label>
+                        <input
+                          type="number"
+                          defaultValue="5"
+                          className="w-full bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white"
+                          min="3"
+                          max="10"
+                        />
+                      </div>
+                    </div>
+                    <div className="bg-deep-600 rounded p-3">
+                      <p className="text-xs text-deep-300">
+                        <strong>Research Note:</strong> Studies demonstrate 15-60% improvements in breath-hold duration with maximal training protocols. Always practice with proper supervision and stop at first sign of discomfort.
+                      </p>
                     </div>
                   </div>
                 )}

@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 // Training schedule constants
 export const START_DATE = '2025-08-02';
 export const FOCUS_AREAS = {
-  1: 'Comfortable CO₂ Training',
+  1: 'Maximal Breath-Hold Training',
   2: 'Breath Control', 
   3: 'O₂ Tolerance',
   4: 'Mental + Technique',
@@ -14,7 +14,7 @@ export const FOCUS_AREAS = {
 };
 
 export const SESSION_TYPES = {
-  1: 'Comfortable CO₂ Training',
+  1: 'Maximal Breath-Hold Training',
   2: 'Breath Control',
   3: 'O₂ Tolerance',
   4: 'Mental + Technique',
@@ -31,9 +31,9 @@ export function generateSessionDetails(weekday, maxHoldSeconds) {
   }
 
   const details = {
-    1: `5min prep + 7× comfortable holds (40% max) with decreasing rest. Stop at contractions. ~30min total`,
+    1: `3× maximal breath-hold attempts with 4min rest periods. Evidence-based training for optimal adaptation. ~15min total`,
     2: `10min diaphragmatic + 5min alternate nostril + 8× box breathing (4-4-4-4) + 2min recovery. ~25min total`,
-    3: `4× progressive holds (60% → 75% of max, capped at 80%). Fixed 3min rest periods. ~25min total`,
+    3: `5× progressive holds (60% → 95% of max). Evidence-based progression to near-maximum. Fixed 3min rest. ~25min total`,
     4: `15min visualization + 10min mindfulness + 10min PMR + 2× mindful holds (60% max). ~45min total`,
     5: `5× ${Math.round(maxHoldSeconds * 0.625)} sec holds. Rest: 2:00 → 0:30`,
     6: `2min tidal breathing + progressive holds: 25% → 35% → 50% → 65% → 2× max holds`,

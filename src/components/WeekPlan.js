@@ -25,12 +25,14 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
   const [customSessionBase, setCustomSessionBase] = useState('');
 
   const sessionTypes = [
-    'CO₂ Tolerance',
-    'Breath Control', 
-    'O₂ Tolerance',
-    'Mental + Technique',
+    'Comfortable CO₂ Training',
+    'Traditional CO₂ Tables',
     'Advanced CO₂ Table',
+    'O₂ Tolerance',
+    'Maximal Breath-Hold Training',
     'Max Breath-Hold',
+    'Breath Control',
+    'Mental + Technique',
     'Recovery & Flexibility'
   ];
 
@@ -689,23 +691,18 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-2xl">{getSessionIcon(session.focus)}</span>
                     <div className="flex-1">
-                      <div className="text-base font-bold text-white leading-tight">
-                        {session.focus}
-                      </div>
+                      <select
+                        value={session.focus}
+                        onChange={(e) => handleSessionTypeChange(day.date, e.target.value)}
+                        className="w-full bg-transparent border border-deep-600 rounded px-2 py-1 text-sm text-white font-semibold hover:bg-deep-700 focus:bg-deep-700 focus:outline-none focus:border-ocean-500"
+                      >
+                        {sessionTypes.map((type) => (
+                          <option key={type} value={type} className="bg-deep-800">
+                            {type}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  </div>
-                  <div className="text-sm text-deep-300 mb-3 flex-1">
-                    <select
-                      value={session.focus}
-                      onChange={(e) => handleSessionTypeChange(day.date, e.target.value)}
-                      className="w-full bg-transparent border border-deep-600 rounded px-2 py-1 text-sm text-deep-300 hover:bg-deep-700 focus:bg-deep-700 focus:outline-none focus:border-ocean-500"
-                    >
-                      {sessionTypes.map((type) => (
-                        <option key={type} value={type} className="bg-deep-800">
-                          {type}
-                        </option>
-                      ))}
-                    </select>
                   </div>
                   <button
                     onClick={() => handleToggleComplete(day.date)}
@@ -806,23 +803,18 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-2xl">{getSessionIcon(session.focus)}</span>
                     <div className="flex-1">
-                      <div className="text-base font-bold text-white leading-tight">
-                        {session.focus}
-                      </div>
+                      <select
+                        value={session.focus}
+                        onChange={(e) => handleSessionTypeChange(day.date, e.target.value)}
+                        className="w-full bg-transparent border border-deep-600 rounded px-2 py-1 text-sm text-white font-semibold hover:bg-deep-700 focus:bg-deep-700 focus:outline-none focus:border-ocean-500"
+                      >
+                        {sessionTypes.map((type) => (
+                          <option key={type} value={type} className="bg-deep-800">
+                            {type}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  </div>
-                  <div className="text-sm text-deep-300 mb-3 flex-1">
-                    <select
-                      value={session.focus}
-                      onChange={(e) => handleSessionTypeChange(day.date, e.target.value)}
-                      className="w-full bg-transparent border border-deep-600 rounded px-2 py-1 text-sm text-deep-300 hover:bg-deep-700 focus:bg-deep-700 focus:outline-none focus:border-ocean-500"
-                    >
-                      {sessionTypes.map((type) => (
-                        <option key={type} value={type} className="bg-deep-800">
-                          {type}
-                        </option>
-                      ))}
-                    </select>
                   </div>
                   <button
                     onClick={() => handleToggleComplete(day.date)}
