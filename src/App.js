@@ -1772,12 +1772,13 @@ function App() {
                       onChange={(e) => handleWeeklyScheduleChange(key, e.target.value)}
                       className="bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white min-w-[200px]"
                     >
-                      <option value="CO₂ Tolerance">CO₂ Tolerance</option>
-                      <option value="O₂ Tolerance">O₂ Tolerance</option>
-                      <option value="Breath Control">Breath Control</option>
-                      <option value="Mental + Technique">Mental + Technique</option>
-                      <option value="Max Breath-Hold">Max Breath-Hold</option>
-                      <option value="Recovery & Flexibility">Recovery & Flexibility</option>
+                                      <option value="Comfortable CO₂ Training">Comfortable CO₂ Training</option>
+                <option value="O₂ Tolerance">O₂ Tolerance</option>
+                <option value="Breath Control">Breath Control</option>
+                <option value="Mental + Technique">Mental + Technique</option>
+                <option value="Max Breath-Hold">Max Breath-Hold</option>
+                <option value="Recovery & Flexibility">Recovery & Flexibility</option>
+                <option value="Traditional CO₂ Tables">Traditional CO₂ Tables</option>
                       {Object.keys(profiles[currentProfile]?.customSessions || {}).map(sessionName => (
                         <option key={sessionName} value={sessionName}>
                           🎯 {sessionName}

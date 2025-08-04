@@ -338,7 +338,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
     if (!template) return phases;
 
     switch (focus) {
-      case 'CO₂ Tolerance':
+      case 'Traditional CO₂ Tables':
         const co2HoldCount = template.holdCount || 5;
         const co2HoldStart = template.holdStartDuration || 45;
         const co2HoldIncrease = template.holdIncrease || 15;
@@ -349,13 +349,13 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
           phases.push({ 
             type: 'hold', 
             duration: holdTime, 
-            description: `CO₂ Hold ${i + 1}/${co2HoldCount} (${formatTime(holdTime)})` 
+            description: `Traditional CO₂ Hold ${i + 1}/${co2HoldCount} (${formatTime(holdTime)})` 
           });
           if (i < co2HoldCount - 1) {
             phases.push({ 
               type: 'rest', 
               duration: co2RestDuration, 
-              description: `CO₂ Rest ${i + 1}/${co2HoldCount - 1} (${formatTime(co2RestDuration)})` 
+              description: `Traditional CO₂ Rest ${i + 1}/${co2HoldCount - 1} (${formatTime(co2RestDuration)})` 
             });
           }
         }
@@ -546,6 +546,52 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
           description: `Cool-down (${formatTime(template.cooldownDuration)})` 
         });
         break;
+        
+      case 'Comfortable CO₂ Training':
+        // Phase 1: Preparation (5 minutes)
+        phases.push({ 
+          type: 'breathing', 
+          duration: 180, 
+          description: 'Diaphragmatic Breathing (3 min)'
+        });
+        phases.push({ 
+          type: 'box', 
+          duration: 120, 
+          description: 'Box Breathing (2 min)'
+        });
+        
+        // Phase 2: Comfortable CO₂ Table (7 rounds)
+        const comfortableHoldDuration = Math.round(maxHoldSeconds * 0.4);
+        const restPattern = [120, 105, 90, 75, 60, 75, 90];
+        
+        for (let i = 0; i < 7; i++) {
+          phases.push({ 
+            type: 'hold', 
+            duration: comfortableHoldDuration, 
+            description: `Comfortable Hold ${i + 1}/7 (${formatTime(comfortableHoldDuration)})`
+          });
+          
+          if (i < 6) {
+            phases.push({ 
+              type: 'rest', 
+              duration: restPattern[i], 
+              description: `Rest ${i + 1}/6 (${formatTime(restPattern[i])})`
+            });
+          }
+        }
+        
+        // Phase 3: Recovery (5 minutes)
+        phases.push({ 
+          type: 'breathing', 
+          duration: 120, 
+          description: 'Natural Tidal Breathing (2 min)'
+        });
+        phases.push({ 
+          type: 'breathing', 
+          duration: 180, 
+          description: 'Slow-Exhale Breathing (3 min)'
+        });
+        break;
     }
 
     return phases;
@@ -571,7 +617,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
 
   const getSessionIcon = (type) => {
     switch (type) {
-      case 'CO₂ Tolerance': return '🫁';
+      case 'Comfortable CO₂ Training': return '😌';
       case 'Breath Control': return '🫁';
       case 'O₂ Tolerance': return '🫁';
       case 'Mental + Technique': return '🧘';
@@ -579,13 +625,14 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
       case 'Max Breath-Hold': return '⚡';
 
       case 'Recovery & Flexibility': return '🧘‍♀️';
+      case 'Traditional CO₂ Tables': return '🫁';
       default: return '⏱️';
     }
   };
 
   const getSessionColor = (type) => {
     switch (type) {
-      case 'CO₂ Tolerance': return 'bg-blue-900/30 border-blue-700';
+      case 'Comfortable CO₂ Training': return 'bg-indigo-900/30 border-indigo-700';
       case 'Breath Control': return 'bg-green-900/30 border-green-700';
       case 'O₂ Tolerance': return 'bg-purple-900/30 border-purple-700';
       case 'Mental + Technique': return 'bg-yellow-900/30 border-yellow-700';
@@ -593,6 +640,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
       case 'Max Breath-Hold': return 'bg-orange-900/30 border-orange-700';
 
       case 'Recovery & Flexibility': return 'bg-teal-900/30 border-teal-700';
+      case 'Traditional CO₂ Tables': return 'bg-blue-900/30 border-blue-700';
       default: return 'bg-deep-800 border-deep-700';
     }
   };
@@ -947,13 +995,14 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                     className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
                   >
                     <option value="custom">Custom</option>
-                    <option value="CO₂ Tolerance">CO₂ Tolerance</option>
+                    <option value="Comfortable CO₂ Training">Comfortable CO₂ Training</option>
                     <option value="Breath Control">Breath Control</option>
                     <option value="O₂ Tolerance">O₂ Tolerance</option>
                     <option value="Mental + Technique">Mental + Technique</option>
                     <option value="Advanced CO₂ Table">Advanced CO₂ Table</option>
                     <option value="Max Breath-Hold">Max Breath-Hold</option>
                     <option value="Recovery & Flexibility">Recovery & Flexibility</option>
+                    <option value="Traditional CO₂ Tables">Traditional CO₂ Tables</option>
                   </select>
                 </div>
               </div>

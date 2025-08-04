@@ -32,7 +32,7 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       co2ToleranceHoldDuration: 45,
       co2ToleranceRestDuration: 45
     },
-    'CO₂ Tolerance': {
+    'Traditional CO₂ Tables': {
       stretchConfirmation: true,
       tidalBreathingDuration: 120,
       holdCount: 5,
@@ -68,6 +68,16 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       mindfulHoldCount: 2, // 2 mindful holds
       mindfulHoldPercentage: 60, // 60% of max hold
       recoveryDuration: 180 // 3 minutes recovery between holds
+    },
+    'Comfortable CO₂ Training': {
+      stretchConfirmation: true,
+      preparationDuration: 300, // 5 minutes preparation
+      diaphragmaticDuration: 180, // 3 minutes diaphragmatic breathing
+      boxBreathingDuration: 120, // 2 minutes box breathing
+      holdPercentage: 40, // 40% of max hold time
+      holdCount: 7, // 7 rounds maximum
+      restPattern: [120, 105, 90, 75, 60, 75, 90], // Decreasing rest periods in seconds
+      recoveryDuration: 300 // 5 minutes recovery
     }
   });
   const intervalRef = useRef(null);
@@ -78,7 +88,7 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
   const [currentInstruction, setCurrentInstruction] = useState(null);
   const [showNextPhaseInstructions, setShowNextPhaseInstructions] = useState(false);
   const [nextPhaseInstruction, setNextPhaseInstruction] = useState(null);
-  const [selectedSessionType, setSelectedSessionType] = useState(todaySession?.focus || 'CO₂ Tolerance');
+  const [selectedSessionType, setSelectedSessionType] = useState(todaySession?.focus || 'Comfortable CO₂ Training');
 
   // Exercise instructions
   const exerciseInstructions = {
@@ -228,6 +238,43 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
         'Rest for the specified duration (45 seconds)',
         'Repeat for the full number of sets',
         'This helps your body adapt to CO₂ buildup'
+      ]
+    },
+    'comfortable_co2_training': {
+      title: 'Comfortable CO₂ Training',
+      description: 'Gradual CO₂ tolerance building without contractions',
+      steps: [
+        'Take a normal, relaxed breath in',
+        'Hold for the specified duration (40% of max)',
+        'Stay completely relaxed throughout the hold',
+        'Stop immediately if you feel contractions',
+        'Exhale slowly and naturally when done',
+        'Rest for the decreasing rest period',
+        'Focus on comfort - "breath-holding should feel good"'
+      ]
+    },
+    'comfortable_preparation': {
+      title: 'Comfortable CO₂ Preparation',
+      description: 'Relaxation and preparation for comfortable training',
+      steps: [
+        'Start with 3 minutes of diaphragmatic breathing',
+        'Focus on slow, deep belly breaths',
+        'Then practice 2 minutes of box breathing (4-4-4-4)',
+        'Lower your heart rate and enter a calm state',
+        'Prepare your mind for comfortable breath-holding',
+        'Remember: "Breath-holding should feel good, not bad"'
+      ]
+    },
+    'comfortable_recovery': {
+      title: 'Comfortable Recovery',
+      description: 'Gentle recovery to restore normal breathing balance',
+      steps: [
+        'Begin with 2 minutes of natural tidal breathing',
+        'Then practice slow-exhale breathing for 3 minutes',
+        'Inhale for 4 counts, exhale for 8 counts',
+        'Focus on restoring normal O₂/CO₂ balance',
+        'Feel the gentle return to baseline breathing',
+        'Reflect on the comfortable training session'
       ]
     }
   };
@@ -421,8 +468,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
     }
     
     switch (focus) {
-      case 'CO₂ Tolerance':
-        // Evidence-based CO₂ tolerance training
+      case 'Traditional CO₂ Tables':
+        // Traditional CO₂ tolerance training
         const co2HoldCount = template.holdCount || 5;
         const co2HoldStart = template.holdStartDuration || 45;
         const co2HoldIncrease = template.holdIncrease || 15;
@@ -433,13 +480,13 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
           phases.push({ 
             type: 'hold', 
             duration: holdTime, 
-            description: `CO₂ Hold ${i + 1}/${co2HoldCount} (${formatTime(holdTime)})` 
+            description: `Traditional CO₂ Hold ${i + 1}/${co2HoldCount} (${formatTime(holdTime)})` 
           });
           if (i < co2HoldCount - 1) {
             phases.push({ 
               type: 'rest', 
               duration: co2RestDuration, 
-              description: `CO₂ Rest ${i + 1}/${co2HoldCount - 1} (${formatTime(co2RestDuration)})` 
+              description: `Traditional CO₂ Rest ${i + 1}/${co2HoldCount - 1} (${formatTime(co2RestDuration)})` 
             });
           }
         }
@@ -614,6 +661,59 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
         phases.push({ type: 'box', duration: 300, description: 'Box Breathing (5 min)' });
         break;
         
+      case 'Comfortable CO₂ Training':
+        // Phase 1: Preparation (5 minutes)
+        phases.push({ 
+          type: 'breathing', 
+          duration: template.diaphragmaticDuration || 180, 
+          description: 'Diaphragmatic Breathing (3 min)',
+          isComfortablePreparation: true
+        });
+        phases.push({ 
+          type: 'box', 
+          duration: template.boxBreathingDuration || 120, 
+          description: 'Box Breathing (2 min)',
+          isComfortablePreparation: true
+        });
+        
+        // Phase 2: Comfortable CO₂ Table (7 rounds)
+        const comfortableHoldDuration = Math.round(maxHoldSeconds * (template.holdPercentage || 40) / 100);
+        const restPattern = template.restPattern || [120, 105, 90, 75, 60, 75, 90];
+        
+        for (let i = 0; i < (template.holdCount || 7); i++) {
+          phases.push({ 
+            type: 'hold', 
+            duration: comfortableHoldDuration, 
+            description: `Comfortable Hold ${i + 1}/7 (${formatTime(comfortableHoldDuration)})`,
+            isComfortableCo2: true,
+            stopAtContractions: true
+          });
+          
+          if (i < (template.holdCount || 7) - 1) {
+            phases.push({ 
+              type: 'rest', 
+              duration: restPattern[i], 
+              description: `Rest ${i + 1}/6 (${formatTime(restPattern[i])})`,
+              isComfortableCo2: true
+            });
+          }
+        }
+        
+        // Phase 3: Recovery (5 minutes)
+        phases.push({ 
+          type: 'breathing', 
+          duration: 120, 
+          description: 'Natural Tidal Breathing (2 min)',
+          isComfortableRecovery: true
+        });
+        phases.push({ 
+          type: 'breathing', 
+          duration: 180, 
+          description: 'Slow-Exhale Breathing (3 min)',
+          isComfortableRecovery: true
+        });
+        break;
+        
       default:
         phases.push({ type: 'hold', duration: 60, description: 'Default Hold' });
     }
@@ -763,6 +863,9 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
     if (phase.description.includes('Max Hold')) return 'max_hold';
     if (phase.description.includes('Stretch')) return 'stretch_confirmation';
     if (phase.description.includes('CO₂ Tolerance')) return 'co2_tolerance_training';
+    if (phase.description.includes('Comfortable Hold')) return 'comfortable_co2_training';
+    if (phase.isComfortablePreparation) return 'comfortable_preparation';
+    if (phase.description.includes('Natural Tidal') || phase.description.includes('Slow-Exhale')) return 'comfortable_recovery';
     return null;
   };
 
@@ -782,7 +885,10 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       'o2_hold': 'Take a deep breath and hold comfortably. Stay relaxed and focus on your mental state.',
       'max_hold': 'Take 2-3 deep breaths to prepare, then take your final breath and hold. Stay completely relaxed.',
       'stretch_confirmation': 'Perform gentle stretches for your neck, shoulders, chest, and torso. Ensure you feel loose and ready.',
-      'co2_tolerance_training': 'Take a normal breath and hold for the specified time. Focus on staying relaxed during the hold.'
+      'co2_tolerance_training': 'Take a normal breath and hold for the specified time. Focus on staying relaxed during the hold.',
+      'comfortable_co2_training': 'Take a normal, relaxed breath and hold. Stay completely relaxed and stop immediately if you feel contractions. Remember: "Breath-holding should feel good, not bad."',
+      'comfortable_preparation': 'Start with diaphragmatic breathing to lower your heart rate, then practice box breathing to enter a calm state. Prepare your mind for comfortable breath-holding.',
+      'comfortable_recovery': 'Begin with natural tidal breathing, then practice slow-exhale breathing to restore normal O₂/CO₂ balance. Reflect on the comfortable training session.'
     };
 
     return guidance[type] || 'Focus on your breathing and stay relaxed.';
@@ -808,12 +914,13 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
                 className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
                 disabled={isSessionActive}
               >
-                <option value="CO₂ Tolerance">CO₂ Tolerance</option>
+                <option value="Comfortable CO₂ Training">Comfortable CO₂ Training</option>
                 <option value="O₂ Tolerance">O₂ Tolerance</option>
                 <option value="Breath Control">Breath Control</option>
                 <option value="Mental + Technique">Mental + Technique</option>
                 <option value="Max Breath-Hold">Max Breath-Hold</option>
                 <option value="Recovery & Flexibility">Recovery & Flexibility</option>
+                <option value="Traditional CO₂ Tables">Traditional CO₂ Tables</option>
                 {Object.keys(customSessions || {}).map(sessionName => (
                   <option key={sessionName} value={sessionName}>
                     🎯 {sessionName}

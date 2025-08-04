@@ -23,12 +23,23 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 ## 🎯 Key Features
 
 ### 🏊‍♂️ Comprehensive Training Sessions
-- **CO₂ Tolerance Training**: Progressive breath-hold tables with decreasing rest periods to build CO₂ tolerance
+
+#### 🫁 **CO₂ Tolerance Training**
+- **Comfortable CO₂ Training**: Gradual CO₂ tolerance building without contractions, focusing on comfort and adaptation (default)
+- **Traditional CO₂ Tables**: Progressive breath-hold tables with decreasing rest periods to build CO₂ tolerance
+- **Advanced CO₂ Table**: Dynamic tables automatically calculated based on your max hold time
+
+#### 🫁 **O₂ Tolerance Training**
 - **O₂ Tolerance Training**: Progressive breath-holds with fixed rest periods, capped at 80% of max hold time for safety
+
+#### ⚡ **Max Hold Training**
+- **Max Breath-Hold**: Progressive training with stretch confirmation and CO₂ tolerance integration
+
+#### 🧘 **Mental & Technical Training**
 - **Breath Control**: Advanced breathing techniques including diaphragmatic, alternate nostril, and box breathing
 - **Mental + Technique**: Visualization, mindfulness, and progressive relaxation for mental preparation
-- **Max Breath-Hold**: Progressive training with stretch confirmation and CO₂ tolerance integration
-- **Advanced CO₂ Table**: Dynamic tables automatically calculated based on your max hold time
+
+#### 🧘‍♀️ **Recovery & Flexibility**
 - **Recovery & Flexibility**: Stretching and recovery sessions for complete training
 
 ### 📊 Smart Session Management
@@ -52,23 +63,27 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 ## 📸 Screenshots
 
 ### Main Dashboard - 7-Day Training Plan
-![Main Dashboard](at1.png)
+<img src="at1.png" alt="Main Dashboard" width="600" />
+
 *The main dashboard showing your dynamic 7-day training plan. Each day displays the scheduled session type with completion status, session details, and quick access to start training. The plan automatically updates daily to show the next 7 days of your ongoing training program.*
 
 ### Timer Interface - Session Selection & Active Training
-![Timer Interface](at2.png)
+<img src="at2.png" alt="Timer Interface" width="600" />
+
 *The timer interface with session type selection dropdown and active training display. You can choose any session type (including custom sessions) from the dropdown, and the interface provides real-time guidance, phase instructions, and progress tracking during your session.*
 
 ### Settings & Profile Management
-![Settings Interface](at3.png)
+<img src="at3.png" alt="Settings Interface" width="600" />
+
 *The comprehensive settings interface showing profile management, session templates, custom sessions, and data management options. Custom sessions are organized under the Session Templates section for easy access.*
 
-### Custom Session Creation
-![Custom Session Creation](at4.png)
+### Custom Session Creation & Progress Tracking
+<img src="at4.png" alt="Custom Session Creation" width="600" />
+
 *The custom session creator interface where you can build personalized training sessions. Choose from different phase types (hold, breathing, mental, custom) and configure parameters with smart progressive logic that only references the same type of phases.*
 
-### Progress Tracking & Session History
-![Progress Tracking](at5.png)
+<img src="at5.png" alt="Progress Tracking" width="600" />
+
 *Progress tracking and session history with completion statistics, performance insights, and visual charts showing your training progression over time.*
 
 ## 🚀 Installation
@@ -113,11 +128,46 @@ This will start both the React development server and the Electron application.
 
 #### 3. **Session Types Explained**
 
-##### CO₂ Tolerance Training
-- **Purpose**: Build tolerance to CO₂ buildup, which is the primary limiting factor in breath-holds
+### 🫁 **CO₂ Tolerance Training** (Primary Focus)
+*Building tolerance to carbon dioxide buildup - the main limiting factor in breath-holds*
+
+##### Comfortable CO₂ Training (Default) 😌
+- **Purpose**: Build CO₂ tolerance gradually without experiencing contractions or significant discomfort
+- **Philosophy**: "Breath-holding should feel good, not bad" - focus on adaptation rather than suffering
+- **Structure**: Three-phase approach with comfortable holds and decreasing rest periods
+- **Phase 1 - Preparation (5 min)**:
+  - 3 minutes diaphragmatic breathing
+  - 2 minutes box breathing (4-4-4-4 pattern)
+  - Focus on lowering heart rate and entering calm state
+- **Phase 2 - Comfortable CO₂ Table (18-20 min)**:
+  - 7 rounds of holds at 40% of max hold time
+  - Decreasing rest periods: 2:00 → 1:45 → 1:30 → 1:15 → 1:00 → 1:15 → 1:30
+  - Stop immediately if contractions are felt
+- **Phase 3 - Recovery (5 min)**:
+  - 2 minutes natural tidal breathing
+  - 3 minutes slow-exhale breathing (inhale 4 counts, exhale 8 counts)
+- **Key Principles**:
+  - **Comfort Zone Training**: Never push to contractions
+  - **Progressive Adaptation**: Gradual CO₂ elevation without shock
+  - **Sustainable Intensity**: Can be repeated regularly without burnout
+- **Benefits**: Builds CO₂ tolerance while maintaining comfort and preventing overtraining
+
+##### Traditional CO₂ Tables 🫁
+- **Purpose**: Build tolerance to CO₂ buildup using traditional progressive tables
 - **Structure**: Progressive breath-hold tables with decreasing rest periods
 - **Example**: 5 holds starting at 45 seconds, increasing by 15 seconds each, with rest periods decreasing from 60 to 30 seconds
 - **Benefits**: Extends your breath-hold time by training your body to tolerate higher CO₂ levels
+- **Note**: This is the traditional approach - consider using Comfortable CO₂ Training for a safer, more sustainable alternative
+
+##### Advanced CO₂ Table 📊
+- **Purpose**: Dynamic CO₂ tolerance training based on your current max hold time
+- **Structure**: 5 holds at 62.5% of your max hold time with decreasing rest periods
+- **Example**: If max hold is 2:00, holds are 1:15 each with rest decreasing from 2:00 → 1:37 → 1:15 → 0:52 → 0:30
+- **Benefits**: Automatically scales to your current level and provides intense CO₂ tolerance training
+- **Note**: More challenging than Comfortable CO₂ Training - use when ready for advanced work
+
+### 🫁 **O₂ Tolerance Training** (Secondary Focus)
+*Improving oxygen utilization and efficiency*
 
 ##### O₂ Tolerance Training
 - **Purpose**: Improve oxygen utilization and efficiency while maintaining safety
@@ -129,7 +179,10 @@ This will start both the React development server and the Electron application.
 - **Example**: 4 holds starting at 60% of max, increasing by 15 seconds each, with 3-minute rest periods
 - **Benefits**: Teaches your body to use oxygen more efficiently while preventing overtraining
 
-##### Breath Control
+### 🧘 **Mental & Technical Training** (Supporting Skills)
+*Developing mental preparation and breathing techniques*
+
+##### Breath Control 🫁
 - **Purpose**: Master various breathing techniques for better breath-hold preparation
 - **Structure**: Combination of diaphragmatic, alternate nostril, and box breathing
 - **Components**: 
@@ -138,7 +191,7 @@ This will start both the React development server and the Electron application.
   - 8 cycles of box breathing (4-4-4-4 pattern)
 - **Benefits**: Improves breathing efficiency and mental focus
 
-##### Mental + Technique
+##### Mental + Technique 🧘
 - **Purpose**: Develop mental preparation and visualization skills
 - **Structure**: Visualization, mindfulness, and progressive relaxation
 - **Components**:
@@ -148,6 +201,9 @@ This will start both the React development server and the Electron application.
   - 2 mindful breath-holds at 60% of max
 - **Benefits**: Mental preparation is crucial for successful breath-holds
 
+### ⚡ **Max Hold Training** (Performance Focus)
+*Systematic approach to increasing maximum breath-hold time*
+
 ##### Max Breath-Hold
 - **Purpose**: Progressive training to increase your maximum breath-hold time
 - **Structure**: 
@@ -156,6 +212,36 @@ This will start both the React development server and the Electron application.
   - Progressive holds at 25%, 35%, 50%, 65%, 100%, 100% of max
   - CO₂ tolerance training between max holds
 - **Benefits**: Systematic approach to increasing your maximum breath-hold time
+
+### 🧘‍♀️ **Recovery & Flexibility** (Support & Maintenance)
+*Supporting sessions for recovery and physical preparation*
+
+##### Recovery & Flexibility
+- **Purpose**: Physical recovery, flexibility, and maintenance
+- **Structure**: Stretching and recovery exercises
+- **Components**:
+  - 3×30s diaphragm stretches
+  - 2× side stretches
+  - 5 minutes box breathing (4-4-4-4 pattern)
+- **Benefits**: Improves flexibility, aids recovery, and maintains physical readiness
+
+### 📋 **Training Hierarchy & Progression**
+
+#### **Recommended Training Progression**
+1. **Beginner**: Start with Comfortable CO₂ Training (default) and Breath Control
+2. **Intermediate**: Add O₂ Tolerance Training and Mental + Technique sessions
+3. **Advanced**: Incorporate Max Breath-Hold training and Advanced CO₂ Tables
+4. **Maintenance**: Use Recovery & Flexibility sessions regularly
+
+#### **Session Type Selection Guide**
+- **Comfortable CO₂ Training**: Best for beginners and regular training (default)
+- **Traditional CO₂ Tables**: For experienced users who prefer traditional methods
+- **Advanced CO₂ Table**: For advanced users ready for intense CO₂ tolerance work
+- **O₂ Tolerance Training**: For improving oxygen efficiency (research-based safety)
+- **Max Breath-Hold**: For systematic max hold improvement
+- **Breath Control**: For developing breathing techniques and efficiency
+- **Mental + Technique**: For mental preparation and visualization skills
+- **Recovery & Flexibility**: For recovery and physical maintenance
 
 ### Advanced Features
 
