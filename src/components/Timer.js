@@ -33,6 +33,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       co2ToleranceRestDuration: 45
     },
     'CO₂ Tolerance': {
+      stretchConfirmation: true,
+      tidalBreathingDuration: 120,
       holdCount: 5,
       holdStartDuration: 45, // Start at 45 seconds (evidence-based)
       holdIncrease: 15, // Increase by 15 seconds
@@ -40,6 +42,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       sets: 5
     },
     'O₂ Tolerance': {
+      stretchConfirmation: true,
+      tidalBreathingDuration: 120,
       holdCount: 4,
       holdStartDuration: 60, // Start at 60% of max (evidence-based)
       holdIncrease: 10, // Increase by 10 seconds
@@ -47,6 +51,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       sets: 4
     },
     'Breath Control': {
+      stretchConfirmation: true,
+      tidalBreathingDuration: 120,
       diaphragmaticDuration: 600, // 10 minutes diaphragmatic breathing
       alternateNostrilDuration: 300, // 5 minutes alternate nostril
       boxBreathingCycles: 8, // 8 cycles of box breathing
@@ -54,6 +60,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
       recoveryDuration: 120 // 2 minutes recovery
     },
     'Mental + Technique': {
+      stretchConfirmation: true,
+      tidalBreathingDuration: 120,
       visualizationDuration: 900, // 15 minutes guided visualization
       mindfulnessDuration: 600, // 10 minutes mindfulness
       progressiveRelaxationDuration: 600, // 10 minutes PMR
@@ -255,28 +263,9 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
             
             // Handle special phase types
             if (currentPhaseData.type === 'stretch_confirmation') {
-              // Wait for stretch confirmation
-              if (stretchConfirmed) {
-                if (currentPhase < sessionPhases.length - 1) {
-                  setCurrentPhase(prev => prev + 1);
-                  setPhaseTime(0);
-                  setIsRestPhase(sessionPhases[currentPhase + 1]?.type === 'rest');
-                } else {
-                  endSession();
-                }
-              }
+              // Wait for stretch confirmation - do nothing here, let the button handle it
             } else if (currentPhaseData.type === 'max_hold') {
-              // Wait for manual completion for 100% max holds only
-              if (maxHoldCompleted) {
-                if (currentPhase < sessionPhases.length - 1) {
-                  setCurrentPhase(prev => prev + 1);
-                  setPhaseTime(0);
-                  setMaxHoldCompleted(false);
-                  setIsRestPhase(sessionPhases[currentPhase + 1]?.type === 'rest');
-                } else {
-                  endSession();
-                }
-              }
+              // Wait for manual completion for 100% max holds only - do nothing here, let the button handle it
             } else if (phaseTime >= currentPhaseData.duration) {
               // Regular phase completion
               if (currentPhase < sessionPhases.length - 1) {
@@ -301,7 +290,7 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, isSessionActive, currentPhase, sessionPhases, phaseTime, stretchConfirmed]);
+  }, [isRunning, isSessionActive, currentPhase, sessionPhases, phaseTime]);
 
   const startTimer = () => {
     setIsRunning(true);
@@ -320,6 +309,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
     setSessionSummary(null);
     setCurrentPhase(0);
     setPhaseTime(0);
+    setStretchConfirmed(false);
+    setMaxHoldCompleted(false);
   };
 
   const resetSessionCompletion = () => {
@@ -331,6 +322,21 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
   const parseSessionPhases = (focus, maxHoldSeconds) => {
     const phases = [];
     const template = sessionTemplates[focus] || {};
+    
+    // Add stretch confirmation phase for all sessions if enabled
+    if (template.stretchConfirmation) {
+      phases.push({ type: 'stretch_confirmation', duration: 0, description: 'Stretch Confirmation' });
+    }
+    
+    // Add tidal breathing phase for all sessions if enabled
+    if (template.tidalBreathingDuration) {
+      phases.push({ 
+        type: 'tidal_breathing', 
+        duration: template.tidalBreathingDuration, 
+        description: `Tidal Breathing (${formatTime(template.tidalBreathingDuration)})`,
+        isTidalBreathing: true
+      });
+    }
     
     switch (focus) {
       case 'CO₂ Tolerance':
@@ -471,26 +477,11 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
         
       case 'Max Breath-Hold':
         // Use template or default values
-        const tidalBreathingDuration = template.tidalBreathingDuration || 120;
         const maxHoldPercentages = template.maxHoldPercentages || [25, 35, 50, 65, 100, 100];
-        
-        // Stretch confirmation phase (if enabled)
-        if (template.stretchConfirmation) {
-          phases.push({ type: 'stretch_confirmation', duration: 0, description: 'Stretch Confirmation' });
-        }
         
         // Progressive max hold phases
         for (let i = 0; i < maxHoldPercentages.length; i++) {
           const percentage = maxHoldPercentages[i];
-          
-          // Tidal breathing phase
-          phases.push({ 
-            type: 'tidal_breathing', 
-            duration: tidalBreathingDuration, 
-            description: `Tidal Breathing (${formatTime(tidalBreathingDuration)})`,
-            phaseIndex: i,
-            isTidalBreathing: true
-          });
           
           // Max hold phase
           const holdDuration = Math.round(maxHoldSeconds * (percentage / 100));
@@ -592,6 +583,8 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
     setSessionTime(0);
     setCurrentPhase(0);
     setPhaseTime(0);
+    setStretchConfirmed(false);
+    setMaxHoldCompleted(false);
     setIsRestPhase(sessionPhases[0]?.type === 'rest');
     startTimer();
   };
@@ -784,7 +777,16 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
                     Have you completed your stretching routine?
                   </div>
                   <button
-                    onClick={() => setStretchConfirmed(true)}
+                    onClick={() => {
+                      setStretchConfirmed(true);
+                      if (currentPhase < sessionPhases.length - 1) {
+                        setCurrentPhase(prev => prev + 1);
+                        setPhaseTime(0);
+                        setIsRestPhase(sessionPhases[currentPhase + 1]?.type === 'rest');
+                      } else {
+                        endSession();
+                      }
+                    }}
                     className="btn-primary px-6 py-2"
                   >
                     Yes, I'm Ready
