@@ -12,8 +12,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
-        arch: [arm64, x64]
+        include:
+          - os: macos-latest
+            arch: arm64
+          - os: windows-latest
+            arch: x64
+          - os: ubuntu-latest
+            arch: x64
       fail-fast: false
 
     steps:
@@ -39,7 +44,9 @@ jobs:
             rpm \
             file \
             icnsutils \
-            graphicsmagick
+            graphicsmagick \
+            libfuse2 \
+            patchelf
 
       - name: Build React app
         run: npm run build
@@ -50,24 +57,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-              npm run dist-mac
-            else
-              # Build x64 on mac
-              npm run build && npx electron-builder --mac --x64
-            fi
+            npm run build && npx electron-builder --mac --arm64
           elif [[ "$RUNNER_OS" == "Windows" ]]; then
-            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-              npm run dist-win
-            else
-              npx electron-builder --win --x64
-            fi
+            npm run build && npx electron-builder --win --x64
           else
-            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-              npm run dist-linux
-            else
-              npx electron-builder --linux --x64
-            fi
+            npm run build && npx electron-builder --linux --x64
           fi
 
       - name: Upload artifacts
