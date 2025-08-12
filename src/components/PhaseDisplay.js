@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { formatTime } from '../utils/trainingLogic';
 
 const PhaseDisplay = ({ 
@@ -98,6 +98,68 @@ const PhaseDisplay = ({
   }
 
   const currentPhaseData = sessionPhases[currentPhase];
+  
+  // Helpers for box-breathing visualization
+  const isBoxPhase = currentPhaseData.type === 'box';
+  const [nowMs, setNowMs] = useState(typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const lastPhaseTimeChangeMsRef = useRef(typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const lastPhaseTimeRef = useRef(phaseTime);
+  const rafIdRef = useRef(0);
+
+  useEffect(() => {
+    if (phaseTime !== lastPhaseTimeRef.current) {
+      lastPhaseTimeRef.current = phaseTime;
+      lastPhaseTimeChangeMsRef.current = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    }
+  }, [phaseTime]);
+
+  useEffect(() => {
+    if (isSessionActive && isBoxPhase) {
+      const loop = () => {
+        setNowMs(typeof performance !== 'undefined' ? performance.now() : Date.now());
+        rafIdRef.current = requestAnimationFrame(loop);
+      };
+      rafIdRef.current = requestAnimationFrame(loop);
+      return () => cancelAnimationFrame(rafIdRef.current);
+    }
+    return undefined;
+  }, [isSessionActive, isBoxPhase]);
+
+  const boxCycleSeconds = 16; // 4s per side × 4 sides
+  const elapsedSinceTickSec = Math.max(0, (nowMs - lastPhaseTimeChangeMsRef.current) / 1000);
+  const smoothPhaseSeconds = isBoxPhase
+    ? phaseTime + Math.min(1, elapsedSinceTickSec)
+    : phaseTime;
+  const boxT = smoothPhaseSeconds % boxCycleSeconds;
+  const boxSegment = Math.floor(boxT / 4); // 0..3
+  const boxSegProgress = (boxT % 4) / 4; // 0..1
+  const boxSize = 120; // px (slightly smaller)
+  const getBoxDotPosition = () => {
+    let x = 0;
+    let y = 0;
+    switch (boxSegment) {
+      case 0: // top edge: left -> right
+        x = boxSegProgress * boxSize;
+        y = 0;
+        break;
+      case 1: // right edge: top -> bottom
+        x = boxSize;
+        y = boxSegProgress * boxSize;
+        break;
+      case 2: // bottom edge: right -> left
+        x = boxSize - (boxSegProgress * boxSize);
+        y = boxSize;
+        break;
+      case 3: // left edge: bottom -> top
+        x = 0;
+        y = boxSize - (boxSegProgress * boxSize);
+        break;
+      default:
+        x = 0; y = 0;
+    }
+    // Sub-pixel smoothing to avoid rounding jumps
+    return { x: Number(x.toFixed(2)), y: Number(y.toFixed(2)) };
+  };
 
   return (
     <div className="mb-6 p-4 bg-deep-800 rounded-lg border border-deep-700">
@@ -105,15 +167,46 @@ const PhaseDisplay = ({
         {/* Phase Timer - Prominently displayed at the top */}
         {currentPhaseData.duration > 0 && currentPhaseData.type !== 'stretch_confirmation' && (
           <div className="mb-6">
-            <div className="text-4xl font-mono text-ocean-400 mb-2">
+            {/* Primary time display */}
+            <div className="text-4xl font-mono text-ocean-400 mb-1">
               {currentPhaseData.type === 'max_hold' 
-                ? formatTime(phaseTime) // Count up for max holds
-                : formatTime(currentPhaseData.duration - phaseTime) // Count down for other phases
+                ? formatTime(phaseTime)
+                : formatTime(currentPhaseData.duration - phaseTime)
               }
             </div>
             <div className="text-sm text-deep-400 mb-3">
               {currentPhaseData.type === 'max_hold' ? 'Hold Time' : 'Time Remaining'}
             </div>
+            {/* Box-breathing CSS keyframes fallback (jitter-free) */}
+            {isBoxPhase && (() => {
+              const dotDiameter = 18; // px
+              const leftLabel = 'Breathe In';
+              const rightLabel = 'Breathe Out';
+              return (
+                <div className="flex flex-col items-center mb-4">
+                  <div
+                    className="grid items-center mb-2"
+                    style={{ gridTemplateColumns: `auto ${boxSize}px auto`, columnGap: '10px' }}
+                  >
+                    <div className="text-sm text-green-400 text-right whitespace-nowrap">{leftLabel}</div>
+                    <div className="relative" style={{ width: boxSize, height: boxSize }}>
+                      <div className="absolute inset-0 border-2 border-deep-600 rounded-sm" />
+                      <div
+                        className="box-dot bg-ocean-400 shadow"
+                        style={{
+                          width: dotDiameter,
+                          height: dotDiameter,
+                          borderRadius: dotDiameter / 2,
+                          '--box-size': `${boxSize - dotDiameter}px`
+                        }}
+                      />
+                    </div>
+                    <div className="text-sm text-blue-400 whitespace-nowrap">{rightLabel}</div>
+                  </div>
+                  <div className="text-xs text-deep-400">Follow the moving dot clockwise around the square</div>
+                </div>
+              );
+            })()}
             {/* Phase Progress Bar */}
             <div className="w-full bg-deep-700 rounded-full h-3 mb-2">
               <div 
@@ -170,18 +263,31 @@ const PhaseDisplay = ({
           </div>
         )}
         
-        {/* Session Progress */}
+        {/* Session Progress (time-based across entire session) */}
         <div className="border-t border-deep-700 pt-3">
           <div className="text-xs text-deep-500 mb-2">Session Progress</div>
-          <div className="w-full bg-deep-700 rounded-full h-2 mb-2">
-            <div 
-              className="bg-ocean-400 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentPhase + (currentPhaseData.duration > 0 ? (phaseTime / currentPhaseData.duration) : 0)) / sessionPhases.length) * 100}%` }}
-            ></div>
-          </div>
-          <div className="text-xs text-deep-400">
-            {Math.round(((currentPhase + (currentPhaseData.duration > 0 ? (phaseTime / currentPhaseData.duration) : 0)) / sessionPhases.length) * 100)}% complete
-          </div>
+          {(() => {
+            const totalDuration = sessionPhases.reduce((sum, p) => sum + (p.duration > 0 ? p.duration : 0), 0);
+            const completedDuration = sessionPhases
+              .slice(0, currentPhase)
+              .reduce((sum, p) => sum + (p.duration > 0 ? p.duration : 0), 0);
+            const currentContribution = currentPhaseData.duration > 0 ? Math.min(phaseTime, currentPhaseData.duration) : 0;
+            const elapsed = completedDuration + currentContribution;
+            const percentTime = totalDuration > 0 
+              ? Math.min(100, Math.round((elapsed / totalDuration) * 100))
+              : Math.round(((currentPhase + (currentPhaseData.duration > 0 ? (phaseTime / currentPhaseData.duration) : 0)) / sessionPhases.length) * 100);
+            return (
+              <>
+                <div className="w-full bg-deep-700 rounded-full h-2 mb-2">
+                  <div
+                    className="bg-ocean-400 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${percentTime}%` }}
+                  ></div>
+                </div>
+                <div className="text-xs text-deep-400">{percentTime}% complete</div>
+              </>
+            );
+          })()}
         </div>
         
         {/* Next Phase Preview */}

@@ -150,21 +150,21 @@ export const parseBreathControl = (template, maxHoldSeconds) => {
     duration: breathTemplate.alternateNostrilDuration || 300, 
     description: `Alternate Nostril Breathing (${formatTime(breathTemplate.alternateNostrilDuration || 300)})` 
   });
-  const boxCycles = breathTemplate.boxBreathingCycles || 8;
-  const boxRest = breathTemplate.boxBreathingRest || 30;
-  for (let i = 0; i < boxCycles; i++) {
-    phases.push({ 
-      type: 'box', 
-      duration: 16, 
-      description: `Box Breathing ${i + 1}/${boxCycles} (4-4-4-4)` 
+  if (breathTemplate.boxBreathingDuration && breathTemplate.boxBreathingDuration > 0) {
+    // Single continuous box-breathing phase for a fixed duration
+    phases.push({
+      type: 'box',
+      duration: breathTemplate.boxBreathingDuration,
+      description: `Box Breathing (${formatTime(breathTemplate.boxBreathingDuration)})`
     });
-    if (i < boxCycles - 1) {
-      phases.push({ 
-        type: 'rest', 
-        duration: boxRest, 
-        description: `Rest ${i + 1}/${boxCycles - 1} (${formatTime(boxRest)})` 
-      });
-    }
+  } else {
+    const boxCycles = breathTemplate.boxBreathingCycles || 8;
+    const totalBoxDuration = boxCycles * 16; // 4 seconds per 4 segments per cycle
+    phases.push({
+      type: 'box',
+      duration: totalBoxDuration,
+      description: `Box Breathing (${boxCycles} cycles, 4-4-4-4)`
+    });
   }
   if (breathTemplate.recoveryDuration) {
     phases.push({ 
@@ -479,8 +479,10 @@ export const parseSessionPhases = (sessionType, template, maxHoldSeconds) => {
   // Add common phases (stretch confirmation, tidal breathing)
   phases = addCommonPhases(phases, template, maxHoldSeconds);
   
-  // Add cooldown phase
-  phases = addCooldownPhase(phases);
+  // Add cooldown phase except for Breath Control session (no cooldown requested)
+  if (sessionType !== 'Breath Control') {
+    phases = addCooldownPhase(phases);
+  }
   
   return phases;
 }; 

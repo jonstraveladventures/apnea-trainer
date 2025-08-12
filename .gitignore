@@ -8,6 +8,7 @@ yarn-error.log*
 build/
 dist/
 out/
+releases/
 
 # Electron specific
 app/

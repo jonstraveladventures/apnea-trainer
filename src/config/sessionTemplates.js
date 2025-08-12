@@ -55,12 +55,13 @@ export const SESSION_TEMPLATES = {
   },
   'Breath Control': {
     stretchConfirmation: false,
-    tidalBreathingDuration: 120,
-    diaphragmaticDuration: 600, // 10 minutes diaphragmatic breathing
+    tidalBreathingDuration: 120, // 2 minutes tidal breathing at end
+    diaphragmaticDuration: 300, // 5 minutes diaphragmatic breathing
     alternateNostrilDuration: 300, // 5 minutes alternate nostril
-    boxBreathingCycles: 8, // 8 cycles of box breathing
-    boxBreathingRest: 30, // 30 seconds rest between cycles
-    recoveryDuration: 120 // 2 minutes recovery
+    boxBreathingDuration: 300, // 5 minutes continuous box breathing
+    boxBreathingCycles: 0, // cycles not used when duration is provided
+    boxBreathingRest: 0, // no rests between box cycles
+    recoveryDuration: 0 // no recovery phase
   },
   'Mental + Technique': {
     stretchConfirmation: false,

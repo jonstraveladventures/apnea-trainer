@@ -32,4 +32,22 @@
   .session-card {
     @apply bg-deep-800 rounded-lg p-4 border border-deep-700 hover:border-ocean-600 transition-colors duration-200;
   }
+
+  /* Box breathing animation */
+  .box-dot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    border-radius: 9999px;
+    will-change: transform;
+    animation: box-orbit 16s linear infinite;
+  }
 } 
+
+@keyframes box-orbit {
+  0% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(var(--box-size, 120px), 0, 0); }
+  50% { transform: translate3d(var(--box-size, 120px), var(--box-size, 120px), 0); }
+  75% { transform: translate3d(0, var(--box-size, 120px), 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}

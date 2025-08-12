@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Timer as TimerIcon, Settings, Edit3, Save, X } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import { formatTime, getWeekday, generateSessionDetails, generateSchedule, START_DATE } from '../utils/trainingLogic';
 import dayjs from 'dayjs';
 import MaxHoldModal from './MaxHoldModal';
@@ -623,10 +623,7 @@ const Timer = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, cur
         {/* Left Panel - Timer */}
         <div className="card">
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-6 flex items-center justify-center gap-2">
-          <TimerIcon className="w-6 h-6" />
-          Breath-Hold Timer
-        </h2>
+        {/* Title removed to save vertical space */}
         
             {/* Session Type Selector */}
             <SessionSelector
