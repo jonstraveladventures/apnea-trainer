@@ -8,11 +8,13 @@ on:
 
 jobs:
   build:
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
+        arch: [arm64, x64]
+      fail-fast: false
 
     steps:
       - name: Checkout
@@ -22,28 +24,54 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Linux build deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libarchive-tools \
+            xz-utils \
+            rpm \
+            file
+
       - name: Build React app
         run: npm run build
 
-      - name: Build Electron app (platform-specific)
+      - name: Build Electron app (platform/arch specific)
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            npm run dist-mac
+            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
+              npm run dist-mac
+            else
+              # Build x64 on mac
+              npm run build && npx electron-builder --mac --x64
+            fi
           elif [[ "$RUNNER_OS" == "Windows" ]]; then
-            npm run dist-win
+            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
+              npm run dist-win
+            else
+              npx electron-builder --win --x64
+            fi
           else
-            npm run dist-linux
+            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
+              npm run dist-linux
+            else
+              npx electron-builder --linux --x64
+            fi
           fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: apnea-trainer-${{ runner.os }}
+          name: apnea-trainer-${{ runner.os }}-${{ matrix.arch }}
           path: dist/**
 
   release:
