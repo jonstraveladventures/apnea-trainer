@@ -11,7 +11,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "electron": "electron .",
-    "electron-dev": "concurrently \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && NODE_ENV=development electron .\"",
+    "electron-dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
     "electron-pack": "electron-builder",
     "dist": "npm run build && electron-builder",
     "dist-mac": "npm run build && electron-builder --mac",
@@ -37,7 +37,8 @@
     "@types/react-dom": "^18.2.18",
     "typescript": "^4.9.5",
     "electron": "^28.0.0",
-    "electron-builder": "^24.6.4"
+    "electron-builder": "^24.6.4",
+    "cross-env": "^7.0.3"
   },
   "build": {
     "appId": "com.apneatrainer.app",
