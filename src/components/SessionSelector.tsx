@@ -1,21 +1,35 @@
 import React from 'react';
 import { SESSION_CATEGORIES } from '../config/sessionTemplates';
+import { CustomSessions, Session } from '../types';
 
-const SessionSelector = ({ 
-  selectedSessionType, 
-  onSessionTypeChange, 
-  hasUserChangedSession, 
-  todaySession, 
+interface SessionSelectorProps {
+  selectedSessionType: string;
+  onSessionTypeChange: (value: string) => void;
+  hasUserChangedSession: boolean;
+  todaySession: Session | null | undefined;
+  isSessionActive: boolean;
+  customSessions?: CustomSessions;
+}
+
+const SessionSelector: React.FC<SessionSelectorProps> = ({
+  selectedSessionType,
+  onSessionTypeChange,
+  hasUserChangedSession,
+  todaySession,
   isSessionActive,
   customSessions = {}
 }) => {
   return (
     <div className="mb-6">
+      <label htmlFor="session-type-select" className="sr-only">Select session type</label>
       <select
+        id="session-type-select"
         value={selectedSessionType}
         onChange={(e) => onSessionTypeChange(e.target.value)}
         className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
         disabled={isSessionActive}
+        aria-label="Select session type"
+        aria-disabled={isSessionActive}
       >
         {Object.entries(SESSION_CATEGORIES).map(([category, sessionTypes]) => (
           <optgroup key={category} label={category}>
@@ -45,4 +59,4 @@ const SessionSelector = ({
   );
 };
 
-export default SessionSelector; 
+export default SessionSelector;

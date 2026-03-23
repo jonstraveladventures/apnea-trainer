@@ -1,41 +1,34 @@
 import React from 'react';
 import { formatTime } from '../utils/trainingLogic';
+import { getPhaseIcon } from '../utils/phaseUtils';
+import { Phase } from '../types';
 
-const SessionPreview = ({ 
-  sessionPhases = [], 
-  actualMaxHold, 
-  isSessionActive 
+interface SessionPreviewProps {
+  sessionPhases?: Phase[];
+  actualMaxHold: number | null;
+  isSessionActive: boolean;
+}
+
+const SessionPreview: React.FC<SessionPreviewProps> = ({
+  sessionPhases = [],
+  actualMaxHold,
+  isSessionActive
 }) => {
-  const getPhaseIcon = (type) => {
-    switch (type) {
-      case 'hold': return '🫁';
-      case 'rest': return '😌';
-      case 'breathing': return '🫁';
-      case 'box': return '📦';
-      case 'visualization': return '🧘';
-      case 'recovery': return '🔄';
-      case 'warmup': return '🔥';
-      case 'max': return '⚡';
-      case 'stretch': return '🧘‍♀️';
-      case 'cooldown': return '❄️';
-      case 'tidal_breathing': return '🌊';
-      case 'max_hold': return '⚡';
-      case 'stretch_confirmation': return '✅';
-      default: return '⏱️';
-    }
-  };
-
   if (!actualMaxHold || sessionPhases.length === 0 || isSessionActive) {
     return null;
   }
 
-  const totalTime = sessionPhases.reduce((total, phase) => total + phase.duration, 0);
+  const totalTime = sessionPhases
+    .filter(phase => phase.type !== 'stretch_confirmation') // Exclude stretch confirmation from total time
+    .reduce((total, phase) => total + phase.duration, 0);
 
   return (
     <div className="mt-4">
       <div className="text-sm font-semibold text-deep-300 mb-2">Session Preview:</div>
       <div className="max-h-32 overflow-y-auto space-y-1">
-        {sessionPhases.map((phase, index) => (
+        {sessionPhases
+          .filter(phase => phase.type !== 'stretch_confirmation') // Exclude stretch confirmation from preview
+          .map((phase, index) => (
           <div key={index} className="flex items-center justify-between text-xs bg-deep-700 rounded px-2 py-1">
             <div className="flex items-center gap-2">
               <span>{getPhaseIcon(phase.type)}</span>
@@ -54,4 +47,4 @@ const SessionPreview = ({
   );
 };
 
-export default SessionPreview; 
+export default SessionPreview;

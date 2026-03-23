@@ -5,7 +5,8 @@ import App from './App';
 import { AppProvider } from './context/AppContext';
 import { TimerProvider } from './context/TimerContext';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const rootElement = document.getElementById('root') as HTMLElement;
+const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <AppProvider>
@@ -14,4 +15,4 @@ root.render(
       </TimerProvider>
     </AppProvider>
   </React.StrictMode>
-); 
+);

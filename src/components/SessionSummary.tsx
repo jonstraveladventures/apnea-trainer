@@ -1,7 +1,15 @@
 import React from 'react';
 import { formatTime } from '../utils/trainingLogic';
+import { SessionSummary as SessionSummaryType } from '../types';
 
-const SessionSummary = ({
+interface SessionSummaryProps {
+  sessionCompleted: boolean;
+  sessionSummary: SessionSummaryType | null;
+  onResetTimer: () => void;
+  onResetSessionCompletion: () => void;
+}
+
+const SessionSummary: React.FC<SessionSummaryProps> = ({
   sessionCompleted,
   sessionSummary,
   onResetTimer,
@@ -43,4 +51,4 @@ const SessionSummary = ({
   );
 };
 
-export default SessionSummary; 
+export default SessionSummary;

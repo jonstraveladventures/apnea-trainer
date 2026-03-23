@@ -1,25 +1,30 @@
 import React from 'react';
 import { TrendingUp, Calendar, Clock } from 'lucide-react';
 import { formatTime } from '../utils/trainingLogic';
+import { Session } from '../types';
 
-const ProgressChart = ({ sessions }) => {
+interface ProgressChartProps {
+  sessions: Session[];
+}
+
+const ProgressChart: React.FC<ProgressChartProps> = ({ sessions }) => {
   const completedSessions = sessions.filter(s => s.completed);
   const maxHoldSessions = sessions.filter(s => s.actualMaxHold && s.actualMaxHold > 0);
-  
+
   const progress = (completedSessions.length / sessions.length) * 100;
-  
+
   const maxHoldData = maxHoldSessions
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(-10); // Last 10 sessions
 
-  const getMaxHold = () => {
+  const getMaxHold = (): number => {
     if (maxHoldSessions.length === 0) return 0;
-    return Math.max(...maxHoldSessions.map(s => s.actualMaxHold));
+    return Math.max(...maxHoldSessions.map(s => s.actualMaxHold as number));
   };
 
-  const getAverageMaxHold = () => {
+  const getAverageMaxHold = (): number => {
     if (maxHoldSessions.length === 0) return 0;
-    const sum = maxHoldSessions.reduce((acc, s) => acc + s.actualMaxHold, 0);
+    const sum = maxHoldSessions.reduce((acc, s) => acc + (s.actualMaxHold as number), 0);
     return Math.round(sum / maxHoldSessions.length);
   };
 
@@ -38,7 +43,7 @@ const ProgressChart = ({ sessions }) => {
           </div>
           <div className="text-sm text-deep-400 mb-3">Completion Rate</div>
           <div className="w-full bg-deep-700 rounded-full h-2">
-            <div 
+            <div
               className="bg-ocean-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             ></div>
@@ -78,22 +83,22 @@ const ProgressChart = ({ sessions }) => {
             <Clock className="w-4 h-4 text-deep-400" />
             <h3 className="font-semibold">Max Hold Progress (Last 10 Sessions)</h3>
           </div>
-          
+
           <div className="relative h-32 bg-deep-800 rounded-lg p-4">
             <div className="flex items-end justify-between h-full">
               {maxHoldData.map((session, index) => {
-                const maxHold = Math.max(...maxHoldData.map(s => s.actualMaxHold));
-                const height = (session.actualMaxHold / maxHold) * 100;
-                
+                const maxHold = Math.max(...maxHoldData.map(s => s.actualMaxHold as number));
+                const height = ((session.actualMaxHold as number) / maxHold) * 100;
+
                 return (
                   <div key={session.date} className="flex flex-col items-center">
                     <div className="text-xs text-deep-500 mb-1">
-                      {formatTime(session.actualMaxHold)}
+                      {formatTime(session.actualMaxHold as number)}
                     </div>
-                    <div 
+                    <div
                       className="w-4 bg-ocean-500 rounded-t transition-all duration-300 hover:bg-ocean-400"
                       style={{ height: `${height}%` }}
-                      title={`${session.date}: ${formatTime(session.actualMaxHold)}`}
+                      title={`${session.date}: ${formatTime(session.actualMaxHold as number)}`}
                     ></div>
                     <div className="text-xs text-deep-500 mt-1">
                       {new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -112,7 +117,7 @@ const ProgressChart = ({ sessions }) => {
           <Calendar className="w-4 h-4 text-deep-400" />
           <h3 className="font-semibold">Focus Area Distribution</h3>
         </div>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.entries({
             'CO₂ Tolerance': completedSessions.filter(s => s.focus === 'CO₂ Tolerance').length,
@@ -134,4 +139,4 @@ const ProgressChart = ({ sessions }) => {
   );
 };
 
-export default ProgressChart; 
+export default ProgressChart;

@@ -1,111 +1,42 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { formatTime } from '../utils/trainingLogic';
+import { getPhaseIcon, getExerciseTypeFromPhase, getPhaseGuidance, getTimerColor } from '../utils/phaseUtils';
+import { Phase } from '../types';
 
-const PhaseDisplay = ({ 
+interface PhaseDisplayProps {
+  currentPhase: number;
+  sessionPhases: Phase[];
+  phaseTime: number;
+  isSessionActive: boolean;
+  stretchConfirmed: boolean;
+  onStretchConfirm: () => void;
+  onMaxHoldComplete: () => void;
+  onPhaseTimeAdjust?: (newTime: number) => void;
+}
+
+const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
   currentPhase,
   sessionPhases,
   phaseTime,
   isSessionActive,
   stretchConfirmed,
   onStretchConfirm,
-  onMaxHoldComplete
+  onMaxHoldComplete,
+  onPhaseTimeAdjust
 }) => {
-  const getPhaseIcon = (type) => {
-    switch (type) {
-      case 'hold': return '🫁';
-      case 'rest': return '😌';
-      case 'breathing': return '🫁';
-      case 'box': return '📦';
-      case 'visualization': return '🧘';
-      case 'recovery': return '🔄';
-      case 'warmup': return '🔥';
-      case 'max': return '⚡';
-      case 'stretch': return '🧘‍♀️';
-      case 'cooldown': return '❄️';
-      case 'tidal_breathing': return '🌊';
-      case 'max_hold': return '⚡';
-      case 'stretch_confirmation': return '✅';
-      default: return '⏱️';
-    }
-  };
+  // All hooks must be called at the top level, before any conditional returns
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [nowMs, setNowMs] = useState<number>(typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const lastPhaseTimeChangeMsRef = useRef<number>(typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const lastPhaseTimeRef = useRef<number>(phaseTime);
+  const rafIdRef = useRef<number>(0);
 
-  const getExerciseTypeFromPhase = (phase) => {
-    if (phase.description.includes('Tidal Breathing')) return 'tidal_breathing';
-    if (phase.description.includes('Diaphragmatic')) return 'diaphragmatic_breathing';
-    if (phase.description.includes('Alternate Nostril')) return 'alternate_nostril';
-    if (phase.description.includes('Box Breathing')) return 'box_breathing';
-    if (phase.description.includes('Visualization')) return 'visualization';
-    if (phase.description.includes('Mindfulness')) return 'mindfulness';
-    if (phase.description.includes('Progressive')) return 'progressive_relaxation';
-    if (phase.description.includes('CO₂ Hold')) return 'co2_hold';
-    if (phase.description.includes('O₂ Hold')) return 'o2_hold';
-    if (phase.description.includes('Max Hold')) return 'max_hold';
-    if (phase.description.includes('Stretch')) return 'stretch_confirmation';
-    if (phase.description.includes('CO₂ Tolerance')) return 'co2_tolerance_training';
-    if (phase.description.includes('Comfortable Hold')) return 'comfortable_co2_training';
-    if (phase.isComfortablePreparation) return 'comfortable_preparation';
-    if (phase.description.includes('Natural Tidal') || phase.description.includes('Slow-Exhale')) return 'comfortable_recovery';
-    return null;
-  };
+  // Get current phase data safely
+  const currentPhaseData = sessionPhases?.[currentPhase];
+  const isBoxPhase = currentPhaseData?.type === 'box';
 
-  const getPhaseGuidance = (phase) => {
-    const type = getExerciseTypeFromPhase(phase);
-    if (!type) return 'Focus on your breathing and stay relaxed.';
-
-    const guidance = {
-      'tidal_breathing': 'Breathe naturally and relax. Focus on the rhythm of your breath without trying to control it.',
-      'diaphragmatic_breathing': 'Place one hand on your chest and one on your abdomen. Breathe deeply so your abdomen rises, not your chest.',
-      'alternate_nostril': 'Use your thumb and ring finger to alternate nostrils. Breathe slowly and evenly through each nostril.',
-      'box_breathing': 'Follow the 4-4-4-4 pattern: inhale 4s, hold 4s, exhale 4s, hold empty 4s. Repeat this cycle.',
-      'visualization': 'Close your eyes and imagine a peaceful underwater scene. Visualize yourself swimming effortlessly.',
-      'mindfulness': 'Focus your attention on your breath. When thoughts arise, acknowledge them and return to breathing.',
-      'progressive_relaxation': 'Start with your toes and work up to your head. Tense each muscle group for 5 seconds, then release.',
-      'co2_hold': 'Take a normal breath and hold. Focus on staying relaxed as you feel the urge to breathe.',
-      'o2_hold': 'Take a deep breath and hold comfortably. Stay relaxed and focus on your mental state.',
-      'max_hold': 'Take 2-3 deep breaths to prepare, then take your final breath and hold. Stay completely relaxed.',
-      'stretch_confirmation': 'Perform gentle stretches for your neck, shoulders, chest, and torso. Ensure you feel loose and ready.',
-      'comfortable_co2_training': 'Stay in your comfort zone. Stop when you feel the first contraction.',
-      'comfortable_preparation': 'Prepare your body and mind for comfortable CO₂ training.',
-      'comfortable_recovery': 'Allow your body to recover naturally from the training session.'
-    };
-
-    return guidance[type] || 'Focus on your breathing and stay relaxed.';
-  };
-
-  const getTimerColor = (currentPhaseData, phaseTime) => {
-    const progress = phaseTime / currentPhaseData.duration;
-    
-    if (currentPhaseData.type === 'rest') return 'text-green-400';
-    if (currentPhaseData.type === 'hold' || currentPhaseData.type === 'max') {
-      if (progress < 0.3) return 'text-green-400';
-      if (progress < 0.6) return 'text-yellow-400';
-      if (progress < 0.8) return 'text-orange-400';
-      return 'text-red-400';
-    }
-    if (currentPhaseData.type === 'tidal_breathing') return 'text-blue-400';
-    if (currentPhaseData.type === 'max_hold') {
-      if (progress < 0.3) return 'text-green-400';
-      if (progress < 0.6) return 'text-yellow-400';
-      if (progress < 0.8) return 'text-orange-400';
-      return 'text-red-400';
-    }
-    
-    return 'text-blue-400';
-  };
-
-  if (!isSessionActive || !sessionPhases[currentPhase]) {
-    return null;
-  }
-
-  const currentPhaseData = sessionPhases[currentPhase];
-  
-  // Helpers for box-breathing visualization
-  const isBoxPhase = currentPhaseData.type === 'box';
-  const [nowMs, setNowMs] = useState(typeof performance !== 'undefined' ? performance.now() : Date.now());
-  const lastPhaseTimeChangeMsRef = useRef(typeof performance !== 'undefined' ? performance.now() : Date.now());
-  const lastPhaseTimeRef = useRef(phaseTime);
-  const rafIdRef = useRef(0);
-
+  // Box breathing animation effect
   useEffect(() => {
     if (phaseTime !== lastPhaseTimeRef.current) {
       lastPhaseTimeRef.current = phaseTime;
@@ -125,6 +56,54 @@ const PhaseDisplay = ({
     return undefined;
   }, [isSessionActive, isBoxPhase]);
 
+  // Mouse event listeners for dragging
+  useEffect(() => {
+    if (isDragging && currentPhaseData && onPhaseTimeAdjust) {
+      const handleMouseMove = (e: MouseEvent) => {
+        const rect = progressBarRef.current?.getBoundingClientRect();
+        if (rect) {
+          const clickX = e.clientX - rect.left;
+          const progress = Math.max(0, Math.min(1, clickX / rect.width));
+          const newTime = Math.round(progress * currentPhaseData.duration);
+          onPhaseTimeAdjust(newTime);
+        }
+      };
+
+      const handleMouseUp = () => {
+        setIsDragging(false);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, currentPhaseData, onPhaseTimeAdjust]);
+
+  const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current || !onPhaseTimeAdjust || !currentPhaseData) return;
+
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const progress = Math.max(0, Math.min(1, clickX / rect.width));
+    const newTime = Math.round(progress * currentPhaseData.duration);
+
+    onPhaseTimeAdjust(newTime);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    handleProgressBarClick(e);
+  };
+
+  // Early return if no valid data
+  if (!isSessionActive || !currentPhaseData) {
+    return null;
+  }
+
+  // Box breathing calculations
   const boxCycleSeconds = 16; // 4s per side × 4 sides
   const elapsedSinceTickSec = Math.max(0, (nowMs - lastPhaseTimeChangeMsRef.current) / 1000);
   const smoothPhaseSeconds = isBoxPhase
@@ -134,32 +113,6 @@ const PhaseDisplay = ({
   const boxSegment = Math.floor(boxT / 4); // 0..3
   const boxSegProgress = (boxT % 4) / 4; // 0..1
   const boxSize = 120; // px (slightly smaller)
-  const getBoxDotPosition = () => {
-    let x = 0;
-    let y = 0;
-    switch (boxSegment) {
-      case 0: // top edge: left -> right
-        x = boxSegProgress * boxSize;
-        y = 0;
-        break;
-      case 1: // right edge: top -> bottom
-        x = boxSize;
-        y = boxSegProgress * boxSize;
-        break;
-      case 2: // bottom edge: right -> left
-        x = boxSize - (boxSegProgress * boxSize);
-        y = boxSize;
-        break;
-      case 3: // left edge: bottom -> top
-        x = 0;
-        y = boxSize - (boxSegProgress * boxSize);
-        break;
-      default:
-        x = 0; y = 0;
-    }
-    // Sub-pixel smoothing to avoid rounding jumps
-    return { x: Number(x.toFixed(2)), y: Number(y.toFixed(2)) };
-  };
 
   return (
     <div className="mb-6 p-4 bg-deep-800 rounded-lg border border-deep-700">
@@ -168,8 +121,8 @@ const PhaseDisplay = ({
         {currentPhaseData.duration > 0 && currentPhaseData.type !== 'stretch_confirmation' && (
           <div className="mb-6">
             {/* Primary time display */}
-            <div className="text-4xl font-mono text-ocean-400 mb-1">
-              {currentPhaseData.type === 'max_hold' 
+            <div className="text-4xl font-mono text-ocean-400 mb-1" role="timer" aria-live="polite">
+              {currentPhaseData.type === 'max_hold'
                 ? formatTime(phaseTime)
                 : formatTime(currentPhaseData.duration - phaseTime)
               }
@@ -198,7 +151,7 @@ const PhaseDisplay = ({
                           height: dotDiameter,
                           borderRadius: dotDiameter / 2,
                           '--box-size': `${boxSize - dotDiameter}px`
-                        }}
+                        } as React.CSSProperties}
                       />
                     </div>
                     <div className="text-sm text-blue-400 whitespace-nowrap">{rightLabel}</div>
@@ -207,15 +160,38 @@ const PhaseDisplay = ({
                 </div>
               );
             })()}
-            {/* Phase Progress Bar */}
-            <div className="w-full bg-deep-700 rounded-full h-3 mb-2">
-              <div 
-                className={`h-3 rounded-full transition-all duration-300 ${getTimerColor(currentPhaseData, phaseTime)}`}
-                style={{ width: `${(phaseTime / currentPhaseData.duration) * 100}%` }}
+            {/* Interactive Phase Progress Bar */}
+            <div
+              ref={progressBarRef}
+              className="w-full bg-deep-700 rounded-full h-3 mb-2 cursor-pointer relative group"
+              onClick={handleProgressBarClick}
+              onMouseDown={handleMouseDown}
+              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              role="progressbar"
+              aria-valuenow={phaseTime}
+              aria-valuemin={0}
+              aria-valuemax={currentPhaseData.duration}
+              aria-label="Phase progress"
+            >
+              <div
+                className="h-3 rounded-full transition-all duration-300 bg-ocean-400"
+                style={{
+                  width: `${(phaseTime / currentPhaseData.duration) * 100}%`,
+                  minWidth: '0%',
+                  maxWidth: '100%'
+                }}
+                title={`${phaseTime}s / ${currentPhaseData.duration}s = ${((phaseTime / currentPhaseData.duration) * 100).toFixed(1)}%`}
               ></div>
+              {/* Hover indicator */}
+              <div className="absolute inset-0 bg-transparent group-hover:bg-deep-600/20 rounded-full transition-colors duration-200"></div>
+              {/* Drag indicator */}
+              {isDragging && (
+                <div className="absolute inset-0 bg-ocean-400/20 rounded-full"></div>
+              )}
             </div>
             <div className="text-xs text-deep-400">
               {formatTime(phaseTime)} / {formatTime(currentPhaseData.duration)}
+                       <span className="ml-2 text-ocean-400">(Click or drag to adjust)</span>
             </div>
           </div>
         )}
@@ -232,7 +208,7 @@ const PhaseDisplay = ({
             Phase {currentPhase + 1} of {sessionPhases.length}
           </div>
         </div>
-        
+
         {/* Stretch Confirmation */}
         {currentPhaseData.type === 'stretch_confirmation' && (
           <div className="mb-4">
@@ -242,12 +218,13 @@ const PhaseDisplay = ({
             <button
               onClick={onStretchConfirm}
               className="btn-primary px-6 py-2"
+              aria-label="Confirm stretching complete"
             >
               Yes, I'm Ready
             </button>
           </div>
         )}
-        
+
         {/* Max Hold Completion - Only for 100% max holds */}
         {currentPhaseData.type === 'max_hold' && currentPhaseData.isMaxHold && (
           <div className="mb-4">
@@ -257,12 +234,13 @@ const PhaseDisplay = ({
             <button
               onClick={onMaxHoldComplete}
               className="btn-primary px-6 py-2"
+              aria-label="Max hold complete"
             >
               Hold Completed
             </button>
           </div>
         )}
-        
+
         {/* Session Progress (time-based across entire session) */}
         <div className="border-t border-deep-700 pt-3">
           <div className="text-xs text-deep-500 mb-2">Session Progress</div>
@@ -273,7 +251,7 @@ const PhaseDisplay = ({
               .reduce((sum, p) => sum + (p.duration > 0 ? p.duration : 0), 0);
             const currentContribution = currentPhaseData.duration > 0 ? Math.min(phaseTime, currentPhaseData.duration) : 0;
             const elapsed = completedDuration + currentContribution;
-            const percentTime = totalDuration > 0 
+            const percentTime = totalDuration > 0
               ? Math.min(100, Math.round((elapsed / totalDuration) * 100))
               : Math.round(((currentPhase + (currentPhaseData.duration > 0 ? (phaseTime / currentPhaseData.duration) : 0)) / sessionPhases.length) * 100);
             return (
@@ -289,7 +267,7 @@ const PhaseDisplay = ({
             );
           })()}
         </div>
-        
+
         {/* Next Phase Preview */}
         {currentPhase < sessionPhases.length - 1 && (
           <div className="border-t border-deep-700 pt-3 mt-3">
@@ -304,4 +282,4 @@ const PhaseDisplay = ({
   );
 };
 
-export default PhaseDisplay; 
+export default PhaseDisplay;

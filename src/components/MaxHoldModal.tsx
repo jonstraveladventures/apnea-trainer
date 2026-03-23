@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { X, Clock, AlertCircle } from 'lucide-react';
 
-const MaxHoldModal = ({ isOpen, onClose, onSave, currentMaxHold }) => {
-  const [maxHoldMinutes, setMaxHoldMinutes] = useState('');
-  const [maxHoldSeconds, setMaxHoldSeconds] = useState('');
-  const [error, setError] = useState('');
+interface MaxHoldModalProps {
+  isOpen: boolean;
+  currentMaxHold: number | null;
+  onClose: () => void;
+  onSave: (totalSeconds: number) => void;
+}
+
+const MaxHoldModal: React.FC<MaxHoldModalProps> = ({ isOpen, onClose, onSave, currentMaxHold }) => {
+  const [maxHoldMinutes, setMaxHoldMinutes] = useState<string>('');
+  const [maxHoldSeconds, setMaxHoldSeconds] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
   // Initialize with current max hold if it exists
   React.useEffect(() => {
@@ -49,16 +56,17 @@ const MaxHoldModal = ({ isOpen, onClose, onSave, currentMaxHold }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="max-hold-modal-title">
       <div className="bg-deep-800 rounded-xl p-6 max-w-md w-full mx-4 border border-deep-700">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-ocean-400" />
-            <h2 className="text-xl font-bold">Set Your Max Breath-Hold Time</h2>
+            <h2 id="max-hold-modal-title" className="text-xl font-bold">Set Your Max Breath-Hold Time</h2>
           </div>
           <button
             onClick={handleCancel}
             className="text-deep-400 hover:text-white p-1"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -66,17 +74,17 @@ const MaxHoldModal = ({ isOpen, onClose, onSave, currentMaxHold }) => {
 
         <div className="mb-6">
           <p className="text-deep-300 mb-4">
-            To provide personalized training sessions, we need to know your current maximum breath-hold time. 
+            To provide personalized training sessions, we need to know your current maximum breath-hold time.
             This will be used to calculate appropriate training intensities.
           </p>
-          
+
           <div className="bg-deep-900 rounded-lg p-4 mb-4">
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle className="w-4 h-4 text-yellow-400" />
               <span className="text-sm font-medium text-yellow-400">Safety Note</span>
             </div>
             <p className="text-xs text-deep-400">
-              Only enter a time you've actually achieved in a safe training environment. 
+              Only enter a time you've actually achieved in a safe training environment.
               Never push beyond your limits during training.
             </p>
           </div>
@@ -93,7 +101,7 @@ const MaxHoldModal = ({ isOpen, onClose, onSave, currentMaxHold }) => {
                 min="0"
                 max="59"
                 value={maxHoldMinutes}
-                onChange={(e) => setMaxHoldMinutes(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxHoldMinutes(e.target.value)}
                 className="input-field w-full text-center"
                 placeholder="0"
               />
@@ -106,7 +114,7 @@ const MaxHoldModal = ({ isOpen, onClose, onSave, currentMaxHold }) => {
                 min="0"
                 max="59"
                 value={maxHoldSeconds}
-                onChange={(e) => setMaxHoldSeconds(e.target.value.padStart(2, '0'))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxHoldSeconds(e.target.value.padStart(2, '0'))}
                 className="input-field w-full text-center"
                 placeholder="00"
               />
@@ -140,4 +148,4 @@ const MaxHoldModal = ({ isOpen, onClose, onSave, currentMaxHold }) => {
   );
 };
 
-export default MaxHoldModal; 
+export default MaxHoldModal;

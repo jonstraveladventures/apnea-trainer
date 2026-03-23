@@ -1,5 +1,7 @@
 // Centralized session template configuration
-export const SESSION_TEMPLATES = {
+import { SessionTemplates, SessionTemplate } from '../types/index';
+
+export const SESSION_TEMPLATES: SessionTemplates = {
   'Maximal Breath-Hold Training': {
     stretchConfirmation: true,
     tidalBreathingDuration: 120,
@@ -96,7 +98,7 @@ export const SESSION_TEMPLATES = {
 };
 
 // Session categories for organization
-export const SESSION_CATEGORIES = {
+export const SESSION_CATEGORIES: Record<string, string[]> = {
   'CO₂ Training': [
     'Comfortable CO₂ Training',
     'Traditional CO₂ Tables',
@@ -120,16 +122,16 @@ export const SESSION_CATEGORIES = {
 };
 
 // Helper function to get all session types
-export const getAllSessionTypes = () => {
+export const getAllSessionTypes = (): string[] => {
   return Object.keys(SESSION_TEMPLATES);
 };
 
 // Helper function to get session template
-export const getSessionTemplate = (sessionType) => {
+export const getSessionTemplate = (sessionType: string): SessionTemplate => {
   return SESSION_TEMPLATES[sessionType] || {};
 };
 
 // Helper function to check if session type exists
-export const isValidSessionType = (sessionType) => {
+export const isValidSessionType = (sessionType: string): boolean => {
   return sessionType in SESSION_TEMPLATES;
-}; 
+};

@@ -2,18 +2,38 @@ import React, { useState } from 'react';
 import { Calendar, Edit3, Plus, Save, X, Eye } from 'lucide-react';
 import dayjs from 'dayjs';
 import { formatTime } from '../utils/trainingLogic';
-import { getAllSessionTypes } from '../config/sessionTemplates';
+import { getAllSessionTypes, SESSION_TEMPLATES } from '../config/sessionTemplates';
+import { getPhaseIcon, getExerciseTypeFromPhase } from '../utils/phaseUtils';
+import { exerciseInstructions } from '../utils/exerciseInstructions';
+import { parseSessionPhases } from '../utils/sessionParsers';
+import { Session, Phase, ExerciseInstruction, CustomSessions } from '../types';
 
-const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleComplete, currentMaxHold, customSessions }) => {
-  const [editingDay, setEditingDay] = useState(null);
-  const [showCustomSessionModal, setShowCustomSessionModal] = useState(false);
-  const [showSessionDetails, setShowSessionDetails] = useState(null);
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [currentInstruction, setCurrentInstruction] = useState(null);
-  const [customSessionName, setCustomSessionName] = useState('');
-  const [customSessionDescription, setCustomSessionDescription] = useState('');
-  const [customSessionType, setCustomSessionType] = useState('custom');
-  const [customSessionConfig, setCustomSessionConfig] = useState({
+interface WeekPlanProps {
+  sessions: Session[];
+  onSessionUpdate: (date: string, updatedSession: Session) => void;
+  onAddCustomSession: (sessionData: any) => void;
+  onToggleComplete: (date: string) => void;
+  currentMaxHold: number | null;
+  customSessions: CustomSessions;
+}
+
+interface DayInfo {
+  date: string;
+  dayName: string;
+  dayNumber: string;
+  month: string;
+}
+
+const WeekPlan: React.FC<WeekPlanProps> = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleComplete, currentMaxHold, customSessions }) => {
+  const [editingDay, setEditingDay] = useState<string | null>(null);
+  const [showCustomSessionModal, setShowCustomSessionModal] = useState<boolean>(false);
+  const [showSessionDetails, setShowSessionDetails] = useState<Session | null>(null);
+  const [showInstructions, setShowInstructions] = useState<boolean>(false);
+  const [currentInstruction, setCurrentInstruction] = useState<ExerciseInstruction | null>(null);
+  const [customSessionName, setCustomSessionName] = useState<string>('');
+  const [customSessionDescription, setCustomSessionDescription] = useState<string>('');
+  const [customSessionType, setCustomSessionType] = useState<string>('custom');
+  const [customSessionConfig, setCustomSessionConfig] = useState<any>({
     warmupHolds: 0,
     warmupDuration: 0,
     restDuration: 0,
@@ -23,13 +43,13 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
     holdRestDuration: 60,
     cooldownDuration: 180
   });
-  const [customSessionBase, setCustomSessionBase] = useState('');
+  const [customSessionBase, setCustomSessionBase] = useState<string>('');
 
   const sessionTypes = getAllSessionTypes();
 
   // Get next 7 days
-  const getNext7Days = () => {
-    const days = [];
+  const getNext7Days = (): DayInfo[] => {
+    const days: DayInfo[] = [];
     for (let i = 0; i < 7; i++) {
       const date = dayjs().add(i, 'day');
       days.push({
@@ -42,30 +62,30 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
     return days;
   };
 
-  const getSessionForDate = (date) => {
+  const getSessionForDate = (date: string): Session | undefined => {
     return sessions.find(s => s.date === date);
   };
 
-  const handleSessionTypeChange = (date, newType) => {
+  const handleSessionTypeChange = (date: string, newType: string) => {
     const existingSession = getSessionForDate(date);
     const updatedSession = {
       ...existingSession,
       focus: newType,
       sessionType: newType,
       date: date
-    };
+    } as Session;
     onSessionUpdate(date, updatedSession);
     setEditingDay(null);
   };
 
-  const calculateSessionDuration = () => {
-    const warmupTime = (customSessionConfig.warmupHolds || 0) * 
+  const calculateSessionDuration = (): number => {
+    const warmupTime = (customSessionConfig.warmupHolds || 0) *
       ((customSessionConfig.warmupDuration || 0) + (customSessionConfig.restDuration || 0));
-    const mainSessionTime = (customSessionConfig.holdCount || 1) * 
-      (customSessionConfig.holdStartDuration || 60) + 
+    const mainSessionTime = (customSessionConfig.holdCount || 1) *
+      (customSessionConfig.holdStartDuration || 60) +
       ((customSessionConfig.holdCount || 1) - 1) * (customSessionConfig.holdRestDuration || 60);
     const cooldownTime = customSessionConfig.cooldownDuration || 180;
-    
+
     return warmupTime + mainSessionTime + cooldownTime;
   };
 
@@ -97,533 +117,33 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
     }
   };
 
-  // Exercise instructions (same as Timer component)
-  const exerciseInstructions = {
-    'tidal_breathing': {
-      title: 'Tidal Breathing',
-      description: 'Normal, relaxed breathing at your natural pace',
-      steps: [
-        'Sit or lie in a comfortable position',
-        'Breathe naturally through your nose',
-        'Focus on the rhythm of your breath',
-        'Don\'t force or control the breathing',
-        'Let your body find its natural breathing pattern'
-      ]
-    },
-    'diaphragmatic_breathing': {
-      title: 'Diaphragmatic Breathing',
-      description: 'Deep breathing using your diaphragm for maximum oxygen intake',
-      steps: [
-        'Place one hand on your chest, one on your abdomen',
-        'Breathe in slowly through your nose',
-        'Feel your abdomen expand (not your chest)',
-        'Exhale slowly through your mouth',
-        'Focus on the movement of your diaphragm',
-        'Aim for 6-8 breaths per minute'
-      ]
-    },
-    'alternate_nostril': {
-      title: 'Alternate Nostril Breathing',
-      description: 'Balancing breathing technique that calms the nervous system',
-      steps: [
-        'Sit comfortably with your spine straight',
-        'Close your right nostril with your right thumb',
-        'Inhale slowly through your left nostril',
-        'Close your left nostril with your ring finger',
-        'Exhale through your right nostril',
-        'Inhale through your right nostril',
-        'Close your right nostril, exhale through left',
-        'Continue alternating for the full duration'
-      ]
-    },
-    'box_breathing': {
-      title: 'Box Breathing (4-4-4-4)',
-      description: 'Equal breathing pattern that promotes calm and focus',
-      steps: [
-        'Inhale slowly through your nose for 4 seconds',
-        'Hold your breath for 4 seconds',
-        'Exhale slowly through your mouth for 4 seconds',
-        'Hold empty lungs for 4 seconds',
-        'Repeat this cycle for the full duration',
-        'Focus on the equal timing of each phase'
-      ]
-    },
-    'visualization': {
-      title: 'Guided Visualization',
-      description: 'Mental imagery to enhance relaxation and focus',
-      steps: [
-        'Close your eyes and get comfortable',
-        'Imagine a peaceful underwater scene',
-        'Visualize yourself swimming effortlessly',
-        'Feel the weightlessness and calm',
-        'Picture your breath as gentle waves',
-        'Stay focused on the peaceful imagery',
-        'If your mind wanders, gently return to the scene'
-      ]
-    },
-    'mindfulness': {
-      title: 'Mindfulness Breathing',
-      description: 'Present-moment awareness focused on the breath',
-      steps: [
-        'Sit in a comfortable, alert position',
-        'Focus your attention on your breath',
-        'Notice the sensation of air entering and leaving',
-        'When thoughts arise, acknowledge them without judgment',
-        'Gently return your focus to the breath',
-        'Stay present with each inhale and exhale'
-      ]
-    },
-    'progressive_relaxation': {
-      title: 'Progressive Muscle Relaxation',
-      description: 'Systematic tensing and relaxing of muscle groups',
-      steps: [
-        'Start with your toes and work up to your head',
-        'Tense each muscle group for 5 seconds',
-        'Release the tension and feel the relaxation',
-        'Move to the next muscle group',
-        'Focus on the contrast between tension and relaxation',
-        'Breathe deeply throughout the process'
-      ]
-    },
-    'co2_hold': {
-      title: 'CO₂ Tolerance Hold',
-      description: 'Building tolerance to carbon dioxide buildup',
-      steps: [
-        'Take a normal breath in',
-        'Hold your breath without forcing',
-        'Focus on staying relaxed',
-        'Notice the urge to breathe but don\'t panic',
-        'When you need to breathe, exhale slowly',
-        'Take a few recovery breaths before the next hold'
-      ]
-    },
-    'o2_hold': {
-      title: 'O₂ Tolerance Hold',
-      description: 'Training your body to function with lower oxygen levels',
-      steps: [
-        'Take a deep breath in',
-        'Hold your breath comfortably',
-        'Stay relaxed and avoid tension',
-        'Focus on your mental state',
-        'When you need to breathe, exhale slowly',
-        'Take full recovery breaths between holds'
-      ]
-    },
-    'max_hold': {
-      title: 'Maximum Breath Hold',
-      description: 'Pushing your limits in a controlled environment',
-      steps: [
-        'Take 2-3 deep breaths to prepare',
-        'Take your final breath and hold',
-        'Stay completely relaxed',
-        'Focus on your mental strength',
-        'When you feel the urge to breathe, try to hold a bit longer',
-        'When you release, exhale slowly and safely',
-        'Take several recovery breaths'
-      ]
-    },
-    'stretch_confirmation': {
-      title: 'Pre-Session Stretching',
-      description: 'Important preparation to prevent injury and improve performance',
-      steps: [
-        'Perform gentle neck and shoulder stretches',
-        'Stretch your chest and rib cage',
-        'Do some gentle torso twists',
-        'Stretch your diaphragm with deep breaths',
-        'Ensure you feel loose and ready',
-        'Only proceed when you feel properly prepared'
-      ]
-    },
-    'co2_tolerance_training': {
-      title: 'CO₂ Tolerance Training',
-      description: 'Post-max hold recovery and CO₂ tolerance building',
-      steps: [
-        'Take a normal breath in',
-        'Hold for the specified duration (45 seconds)',
-        'Focus on staying relaxed during the hold',
-        'Exhale slowly when the time is up',
-        'Rest for the specified duration (45 seconds)',
-        'Repeat for the full number of sets',
-        'This helps your body adapt to CO₂ buildup'
-      ]
-    }
-  };
-
-  const getExerciseTypeFromPhase = (phase) => {
-    if (phase.description.includes('Tidal Breathing')) return 'tidal_breathing';
-    if (phase.description.includes('Diaphragmatic')) return 'diaphragmatic_breathing';
-    if (phase.description.includes('Alternate Nostril')) return 'alternate_nostril';
-    if (phase.description.includes('Box Breathing')) return 'box_breathing';
-    if (phase.description.includes('Visualization')) return 'visualization';
-    if (phase.description.includes('Mindfulness')) return 'mindfulness';
-    if (phase.description.includes('Progressive')) return 'progressive_relaxation';
-    if (phase.description.includes('CO₂ Hold')) return 'co2_hold';
-    if (phase.description.includes('O₂ Hold')) return 'o2_hold';
-    if (phase.description.includes('Max Hold')) return 'max_hold';
-    if (phase.description.includes('Stretch')) return 'stretch_confirmation';
-    if (phase.description.includes('CO₂ Tolerance')) return 'co2_tolerance_training';
-    return null;
-  };
-
-  const showExerciseInstructions = (exerciseType) => {
+  const showExerciseInstructions = (exerciseType: string) => {
     setCurrentInstruction(exerciseInstructions[exerciseType]);
     setShowInstructions(true);
   };
 
-  const handleToggleComplete = (date) => {
+  const handleToggleComplete = (date: string) => {
     if (onToggleComplete) {
       onToggleComplete(date);
     }
   };
 
-  const parseSessionPhases = (focus, maxHoldSeconds) => {
-    const phases = [];
-    
-    const sessionTemplates = {
-      'CO₂ Tolerance': {
-        holdCount: 5,
-        holdStartDuration: 45,
-        holdIncrease: 15,
-        restDuration: 45
-      },
-      'Breath Control': {
-        diaphragmaticDuration: 600,
-        alternateNostrilDuration: 300,
-        boxBreathingCycles: 8,
-        boxBreathingRest: 30,
-        recoveryDuration: 120
-      },
-      'O₂ Tolerance': {
-        holdCount: 4,
-        holdStartDuration: Math.round(maxHoldSeconds * 0.6),
-        holdIncrease: 10,
-        restDuration: Math.round(maxHoldSeconds * 1.5)
-      },
-      'Mental + Technique': {
-        visualizationDuration: 900,
-        mindfulnessDuration: 600,
-        progressiveRelaxationDuration: 600,
-        mindfulHoldCount: 2,
-        mindfulHoldPercentage: 60,
-        recoveryDuration: 180
-      },
-      'Advanced CO₂ Table': {
-        holdStartDuration: Math.round(maxHoldSeconds * 0.4),
-        holdIncrease: Math.round(maxHoldSeconds * 0.08),
-        restDuration: Math.round(maxHoldSeconds * 0.4)
-      },
-      'Max Breath-Hold': {
-        stretchConfirmation: true,
-        tidalBreathingDuration: 120,
-        maxHoldPercentages: [25, 35, 50, 65, 100, 100],
-        co2ToleranceSets: 3,
-        co2ToleranceHoldDuration: 45,
-        co2ToleranceRestDuration: 45
-      },
-      'Recovery & Flexibility': {
-        warmupDuration: 300,
-        stretchDuration: 600,
-        cooldownDuration: 180
-      }
-    };
-
-    const template = sessionTemplates[focus];
-    if (!template) return phases;
-
-    switch (focus) {
-      case 'Traditional CO₂ Tables':
-        const co2HoldCount = template.holdCount || 5;
-        const co2HoldStart = template.holdStartDuration || 45;
-        const co2HoldIncrease = template.holdIncrease || 15;
-        const co2RestDuration = template.restDuration || 45;
-        
-        for (let i = 0; i < co2HoldCount; i++) {
-          const holdTime = co2HoldStart + (i * co2HoldIncrease);
-          phases.push({ 
-            type: 'hold', 
-            duration: holdTime, 
-            description: `Traditional CO₂ Hold ${i + 1}/${co2HoldCount} (${formatTime(holdTime)})` 
-          });
-          if (i < co2HoldCount - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: co2RestDuration, 
-              description: `Traditional CO₂ Rest ${i + 1}/${co2HoldCount - 1} (${formatTime(co2RestDuration)})` 
-            });
-          }
-        }
-        break;
-
-      case 'Breath Control':
-        phases.push({ 
-          type: 'breathing', 
-          duration: template.diaphragmaticDuration || 600, 
-          description: `Diaphragmatic Breathing (${formatTime(template.diaphragmaticDuration || 600)})` 
-        });
-        phases.push({ 
-          type: 'breathing', 
-          duration: template.alternateNostrilDuration || 300, 
-          description: `Alternate Nostril Breathing (${formatTime(template.alternateNostrilDuration || 300)})` 
-        });
-        const boxCycles = template.boxBreathingCycles || 8;
-        const boxRest = template.boxBreathingRest || 30;
-        for (let i = 0; i < boxCycles; i++) {
-          phases.push({ 
-            type: 'box', 
-            duration: 16, 
-            description: `Box Breathing ${i + 1}/${boxCycles} (4-4-4-4)` 
-          });
-          if (i < boxCycles - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: boxRest, 
-              description: `Rest ${i + 1}/${boxCycles - 1} (${formatTime(boxRest)})` 
-            });
-          }
-        }
-        if (template.recoveryDuration) {
-          phases.push({ 
-            type: 'recovery', 
-            duration: template.recoveryDuration, 
-            description: `Recovery (${formatTime(template.recoveryDuration)})` 
-          });
-        }
-        break;
-
-      case 'O₂ Tolerance':
-        const o2HoldCount = template.holdCount || 4;
-        const o2HoldStart = template.holdStartDuration || Math.round(maxHoldSeconds * 0.6);
-        const o2HoldIncrease = template.holdIncrease || 15;
-        const o2RestDuration = template.restDuration || 180; // Fixed 3-minute rest periods
-        
-        for (let i = 0; i < o2HoldCount; i++) {
-          const holdTime = o2HoldStart + (i * o2HoldIncrease);
-          // Cap at 80% of max hold time (research-based safety limit)
-          const cappedHoldTime = Math.min(holdTime, Math.round(maxHoldSeconds * 0.8));
-          phases.push({ 
-            type: 'hold', 
-            duration: cappedHoldTime, 
-            description: `O₂ Hold ${i + 1}/${o2HoldCount} (${formatTime(cappedHoldTime)})` 
-          });
-          if (i < o2HoldCount - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: o2RestDuration, 
-              description: `O₂ Rest ${i + 1}/${o2HoldCount - 1} (${formatTime(o2RestDuration)})` 
-            });
-          }
-        }
-        break;
-
-      case 'Mental + Technique':
-        phases.push({ 
-          type: 'visualization', 
-          duration: template.visualizationDuration || 900, 
-          description: `Guided Visualization (${formatTime(template.visualizationDuration || 900)})` 
-        });
-        phases.push({ 
-          type: 'breathing', 
-          duration: template.mindfulnessDuration || 600, 
-          description: `Mindfulness Breathing (${formatTime(template.mindfulnessDuration || 600)})` 
-        });
-        phases.push({ 
-          type: 'breathing', 
-          duration: template.progressiveRelaxationDuration || 600, 
-          description: `Progressive Muscle Relaxation (${formatTime(template.progressiveRelaxationDuration || 600)})` 
-        });
-        const mindfulHoldCount = template.mindfulHoldCount || 2;
-        const mindfulHoldPercentage = template.mindfulHoldPercentage || 60;
-        const recoveryDuration = template.recoveryDuration || 180;
-        for (let i = 0; i < mindfulHoldCount; i++) {
-          const holdTime = Math.round(maxHoldSeconds * (mindfulHoldPercentage / 100));
-          phases.push({ 
-            type: 'hold', 
-            duration: holdTime, 
-            description: `Mindful Hold ${i + 1}/${mindfulHoldCount} (${formatTime(holdTime)})` 
-          });
-          if (i < mindfulHoldCount - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: recoveryDuration, 
-              description: `Recovery ${i + 1}/${mindfulHoldCount - 1} (${formatTime(recoveryDuration)})` 
-            });
-          }
-        }
-        break;
-
-      case 'Advanced CO₂ Table':
-        let advancedCurrentHold = template.holdStartDuration;
-        for (let i = 0; i < 10; i++) {
-          phases.push({ 
-            type: 'hold', 
-            duration: advancedCurrentHold, 
-            description: `Hold ${i + 1} (${formatTime(advancedCurrentHold)})` 
-          });
-          phases.push({ 
-            type: 'rest', 
-            duration: template.restDuration, 
-            description: `Rest ${i + 1} (${formatTime(template.restDuration)})` 
-          });
-          advancedCurrentHold += template.holdIncrease;
-        }
-        break;
-
-      case 'Max Breath-Hold':
-        const tidalBreathingDuration = template.tidalBreathingDuration || 120;
-        const maxHoldPercentages = template.maxHoldPercentages || [25, 35, 50, 65, 100, 100];
-
-        if (template.stretchConfirmation) {
-          phases.push({ type: 'stretch_confirmation', duration: 0, description: 'Stretch Confirmation' });
-        }
-
-        for (let i = 0; i < maxHoldPercentages.length; i++) {
-          const percentage = maxHoldPercentages[i];
-          const holdDuration = Math.round(maxHoldSeconds * (percentage / 100));
-
-          phases.push({
-            type: 'tidal_breathing',
-            duration: tidalBreathingDuration,
-            description: `Tidal Breathing (${formatTime(tidalBreathingDuration)})`,
-            phaseIndex: i,
-            isTidalBreathing: true
-          });
-
-          phases.push({
-            type: percentage === 100 ? 'max_hold' : 'hold',
-            duration: holdDuration,
-            description: percentage === 100 ? 'Max Hold' : `${percentage}% of max`,
-            phaseIndex: i,
-            percentage: percentage,
-            isMaxHold: percentage === 100
-          });
-        }
-        
-        // CO₂ Tolerance Training after max holds
-        const co2ToleranceSets = template.co2ToleranceSets || 3;
-        const co2ToleranceHoldDuration = template.co2ToleranceHoldDuration || 45;
-        const co2ToleranceRestDuration = template.co2ToleranceRestDuration || 45;
-        
-        for (let i = 0; i < co2ToleranceSets; i++) {
-          phases.push({ 
-            type: 'hold', 
-            duration: co2ToleranceHoldDuration, 
-            description: `CO₂ Tolerance Hold ${i + 1}/${co2ToleranceSets}`,
-            isCo2Tolerance: true
-          });
-          
-          if (i < co2ToleranceSets - 1) {
-            phases.push({ 
-              type: 'rest', 
-              duration: co2ToleranceRestDuration, 
-              description: `CO₂ Tolerance Rest ${i + 1}/${co2ToleranceSets - 1}`,
-              isCo2Tolerance: true
-            });
-          }
-        }
-        break;
-
-      case 'Recovery & Flexibility':
-        phases.push({ 
-          type: 'warmup', 
-          duration: template.warmupDuration, 
-          description: `Warm-up (${formatTime(template.warmupDuration)})` 
-        });
-        phases.push({ 
-          type: 'stretch', 
-          duration: template.stretchDuration, 
-          description: `Stretching (${formatTime(template.stretchDuration)})` 
-        });
-        phases.push({ 
-          type: 'cooldown', 
-          duration: template.cooldownDuration, 
-          description: `Cool-down (${formatTime(template.cooldownDuration)})` 
-        });
-        break;
-        
-      case 'Comfortable CO₂ Training':
-        // Phase 1: Preparation (5 minutes)
-        phases.push({ 
-          type: 'breathing', 
-          duration: 180, 
-          description: 'Diaphragmatic Breathing (3 min)'
-        });
-        phases.push({ 
-          type: 'box', 
-          duration: 120, 
-          description: 'Box Breathing (2 min)'
-        });
-        
-        // Phase 2: Comfortable CO₂ Table (7 rounds)
-        const comfortableHoldDuration = Math.round(maxHoldSeconds * 0.4);
-        const restPattern = [120, 105, 90, 75, 60, 75, 90];
-        
-        for (let i = 0; i < 7; i++) {
-          phases.push({ 
-            type: 'hold', 
-            duration: comfortableHoldDuration, 
-            description: `Comfortable Hold ${i + 1}/7 (${formatTime(comfortableHoldDuration)})`
-          });
-          
-          if (i < 6) {
-            phases.push({ 
-              type: 'rest', 
-              duration: restPattern[i], 
-              description: `Rest ${i + 1}/6 (${formatTime(restPattern[i])})`
-            });
-          }
-        }
-        
-        // Phase 3: Recovery (5 minutes)
-        phases.push({ 
-          type: 'breathing', 
-          duration: 120, 
-          description: 'Natural Tidal Breathing (2 min)'
-        });
-        phases.push({ 
-          type: 'breathing', 
-          duration: 180, 
-          description: 'Slow-Exhale Breathing (3 min)'
-        });
-        break;
-    }
-
-    return phases;
-  };
-
-  const getPhaseIcon = (type) => {
-    const icons = {
-      'hold': '🫁',
-      'rest': '😌',
-      'breathing': '🫁',
-      'box': '📦',
-      'visualization': '🧘',
-      'recovery': '🔄',
-      'warmup': '🔥',
-      'stretch': '🧘‍♀️',
-      'cooldown': '❄️',
-      'tidal_breathing': '🌊',
-      'max_hold': '⚡',
-      'stretch_confirmation': '✅'
-    };
-    return icons[type] || '⏱️';
-  };
-
-  const getSessionIcon = (type) => {
+  const getSessionIcon = (type: string): string => {
     switch (type) {
-      case 'Comfortable CO₂ Training': return '😌';
-      case 'Breath Control': return '🫁';
-      case 'O₂ Tolerance': return '🫁';
-      case 'Mental + Technique': return '🧘';
-      case 'Advanced CO₂ Table': return '📊';
-      case 'Max Breath-Hold': return '⚡';
+      case 'Comfortable CO₂ Training': return '\u{1F60C}';
+      case 'Breath Control': return '\u{1FAC1}';
+      case 'O₂ Tolerance': return '\u{1FAC1}';
+      case 'Mental + Technique': return '\u{1F9D8}';
+      case 'Advanced CO₂ Table': return '\u{1F4CA}';
+      case 'Max Breath-Hold': return '\u{26A1}';
 
-      case 'Recovery & Flexibility': return '🧘‍♀️';
-      case 'Traditional CO₂ Tables': return '🫁';
-      default: return '⏱️';
+      case 'Recovery & Flexibility': return '\u{1F9D8}\u{200D}\u{2640}\u{FE0F}';
+      case 'Traditional CO₂ Tables': return '\u{1FAC1}';
+      default: return '\u{23F1}\u{FE0F}';
     }
   };
 
-  const getSessionColor = (type) => {
+  const getSessionColor = (type: string): string => {
     switch (type) {
       case 'Comfortable CO₂ Training': return 'bg-indigo-900/30 border-indigo-700';
       case 'Breath Control': return 'bg-green-900/30 border-green-700';
@@ -661,8 +181,8 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
             <div
               key={day.date}
               className={`p-6 rounded-lg border min-h-[280px] ${
-                isToday 
-                  ? 'bg-ocean-900/50 border-ocean-600' 
+                isToday
+                  ? 'bg-ocean-900/50 border-ocean-600'
                   : 'bg-deep-800 border-deep-700'
               }`}
             >
@@ -684,7 +204,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                     <div className="flex-1">
                       <select
                         value={session.focus}
-                        onChange={(e) => handleSessionTypeChange(day.date, e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleSessionTypeChange(day.date, e.target.value)}
                         className="w-full bg-transparent border border-deep-600 rounded px-2 py-1 text-sm text-white font-semibold hover:bg-deep-700 focus:bg-deep-700 focus:outline-none focus:border-ocean-500"
                       >
                         {sessionTypes.map((type) => (
@@ -698,12 +218,12 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                   <button
                     onClick={() => handleToggleComplete(day.date)}
                     className={`text-sm font-medium mb-3 flex items-center gap-1 w-full justify-center py-2 rounded transition-colors ${
-                      session.completed 
-                        ? 'text-green-400 hover:text-green-300 bg-green-900/20 hover:bg-green-900/30' 
+                      session.completed
+                        ? 'text-green-400 hover:text-green-300 bg-green-900/20 hover:bg-green-900/30'
                         : 'text-deep-400 hover:text-deep-300 bg-deep-700/50 hover:bg-deep-600/50'
                     }`}
                   >
-                    <span className="text-lg">{session.completed ? '✓' : '○'}</span>
+                    <span className="text-lg">{session.completed ? '\u2713' : '\u25CB'}</span>
                     {session.completed ? 'Completed' : 'Mark Complete'}
                   </button>
                   <button
@@ -773,8 +293,8 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
             <div
               key={day.date}
               className={`p-6 rounded-lg border min-h-[280px] ${
-                isToday 
-                  ? 'bg-ocean-900/50 border-ocean-600' 
+                isToday
+                  ? 'bg-ocean-900/50 border-ocean-600'
                   : 'bg-deep-800 border-deep-700'
               }`}
             >
@@ -796,7 +316,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                     <div className="flex-1">
                       <select
                         value={session.focus}
-                        onChange={(e) => handleSessionTypeChange(day.date, e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleSessionTypeChange(day.date, e.target.value)}
                         className="w-full bg-transparent border border-deep-600 rounded px-2 py-1 text-sm text-white font-semibold hover:bg-deep-700 focus:bg-deep-700 focus:outline-none focus:border-ocean-500"
                       >
                         {sessionTypes.map((type) => (
@@ -810,12 +330,12 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                   <button
                     onClick={() => handleToggleComplete(day.date)}
                     className={`text-sm font-medium mb-3 flex items-center gap-1 w-full justify-center py-2 rounded transition-colors ${
-                      session.completed 
-                        ? 'text-green-400 hover:text-green-300 bg-green-900/20 hover:bg-green-900/30' 
+                      session.completed
+                        ? 'text-green-400 hover:text-green-300 bg-green-900/20 hover:bg-green-900/30'
                         : 'text-deep-400 hover:text-deep-300 bg-deep-700/50 hover:bg-deep-600/50'
                     }`}
                   >
-                    <span className="text-lg">{session.completed ? '✓' : '○'}</span>
+                    <span className="text-lg">{session.completed ? '\u2713' : '\u25CB'}</span>
                     {session.completed ? 'Completed' : 'Mark Complete'}
                   </button>
                   <button
@@ -887,7 +407,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="space-y-6">
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -896,7 +416,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                   <input
                     type="text"
                     value={customSessionName}
-                    onChange={(e) => setCustomSessionName(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomSessionName(e.target.value)}
                     className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
                     placeholder="e.g., Custom CO₂ Table"
                   />
@@ -905,10 +425,10 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                   <label className="text-sm text-deep-300">Session Type:</label>
                   <select
                     value={customSessionType}
-                    onChange={(e) => {
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                       setCustomSessionType(e.target.value);
                       if (e.target.value !== 'custom') {
-                        const template = {
+                        const template: Record<string, any> = {
                           'CO₂ Tolerance': {
                             warmupHolds: 0,
                             warmupDuration: 0,
@@ -928,9 +448,9 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                           },
                           'O₂ Tolerance': {
                             holdCount: 4,
-                            holdStartDuration: Math.round(currentMaxHold * 0.6),
+                            holdStartDuration: Math.round((currentMaxHold || 240) * 0.6),
                             holdIncrease: 10,
-                            restDuration: Math.round(currentMaxHold * 1.5)
+                            restDuration: Math.round((currentMaxHold || 240) * 1.5)
                           },
                           'Mental + Technique': {
                             visualizationDuration: 900,
@@ -941,9 +461,9 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                             recoveryDuration: 180
                           },
                           'Advanced CO₂ Table': {
-                            holdStartDuration: Math.round(currentMaxHold * 0.4),
-                            holdIncrease: Math.round(currentMaxHold * 0.08),
-                            restDuration: Math.round(currentMaxHold * 0.4)
+                            holdStartDuration: Math.round((currentMaxHold || 240) * 0.4),
+                            holdIncrease: Math.round((currentMaxHold || 240) * 0.08),
+                            restDuration: Math.round((currentMaxHold || 240) * 0.4)
                           },
                           'Max Breath-Hold': {
                             stretchConfirmation: true,
@@ -999,22 +519,22 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                 <label className="text-sm text-deep-300">Description:</label>
                 <textarea
                   value={customSessionDescription}
-                  onChange={(e) => setCustomSessionDescription(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCustomSessionDescription(e.target.value)}
                   className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
                   placeholder="Describe the session structure..."
-                  rows="2"
+                  rows={2}
                 />
               </div>
 
               {/* Session Structure */}
               <div className="bg-deep-900 rounded-lg p-4">
                 <h4 className="text-md font-semibold text-white mb-3">Session Structure</h4>
-                
+
                 {/* Dynamic Field Rendering */}
                 {(() => {
-                  const renderField = (key, label, type = 'number', min = 0, max = 1000, step = 1) => {
+                  const renderField = (key: string, label: string, type: string = 'number', min: number = 0, max: number = 1000, step: number = 1): React.ReactNode => {
                     if (customSessionConfig[key] === undefined) return null;
-                    
+
                     return (
                       <div key={key}>
                         <label className="text-xs text-deep-400">{label}:</label>
@@ -1024,7 +544,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                           max={max}
                           step={step}
                           value={customSessionConfig[key] || 0}
-                          onChange={(e) => setCustomSessionConfig({
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomSessionConfig({
                             ...customSessionConfig,
                             [key]: type === 'number' ? (parseInt(e.target.value) || 0) : e.target.value
                           })}
@@ -1034,21 +554,21 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                     );
                   };
 
-                  const renderArrayField = (key, label) => {
+                  const renderArrayField = (key: string, label: string): React.ReactNode => {
                     if (!Array.isArray(customSessionConfig[key])) return null;
-                    
+
                     return (
                       <div key={key} className="col-span-full">
                         <label className="text-xs text-deep-400">{label}:</label>
                         <div className="flex flex-wrap gap-2 mt-1">
-                          {customSessionConfig[key].map((value, index) => (
+                          {customSessionConfig[key].map((value: number, index: number) => (
                             <div key={index} className="flex items-center gap-1">
                               <input
                                 type="number"
                                 min="0"
                                 max="100"
                                 value={value}
-                                onChange={(e) => {
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                   const newArray = [...customSessionConfig[key]];
                                   newArray[index] = parseInt(e.target.value) || 0;
                                   setCustomSessionConfig({
@@ -1060,7 +580,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                               />
                               <button
                                 onClick={() => {
-                                  const newArray = customSessionConfig[key].filter((_, i) => i !== index);
+                                  const newArray = customSessionConfig[key].filter((_: any, i: number) => i !== index);
                                   setCustomSessionConfig({
                                     ...customSessionConfig,
                                     [key]: newArray
@@ -1090,18 +610,17 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                   };
 
                   // Determine which sections to show based on session type
-                  const hasWarmupFields = ['warmupHolds', 'warmupDuration', 'restDuration'].some(key => 
+                  const hasWarmupFields = ['warmupHolds', 'warmupDuration', 'restDuration'].some(key =>
                     customSessionConfig[key] !== undefined
                   );
-                  
-                  const hasMainFields = ['holdCount', 'holdStartDuration', 'holdIncrease', 'holdRestDuration', 
+                  const hasMainFields = ['holdCount', 'holdStartDuration', 'holdIncrease', 'holdRestDuration',
                     'diaphragmaticDuration', 'alternateNostrilDuration', 'boxBreathingCycles', 'boxBreathingRest',
-                    'visualizationDuration', 'mindfulnessDuration', 'progressiveRelaxationDuration', 
+                    'visualizationDuration', 'mindfulnessDuration', 'progressiveRelaxationDuration',
                     'mindfulHoldCount', 'mindfulHoldPercentage', 'co2ToleranceSets', 'co2ToleranceHoldDuration',
                     'co2ToleranceRestDuration', 'stretchConfirmation', 'tidalBreathingDuration', 'maxHoldPercentages'
                   ].some(key => customSessionConfig[key] !== undefined);
-                  
-                  const hasCooldownFields = ['cooldownDuration', 'recoveryDuration'].some(key => 
+
+                  const hasCooldownFields = ['cooldownDuration', 'recoveryDuration'].some(key =>
                     customSessionConfig[key] !== undefined
                   );
 
@@ -1111,7 +630,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                       {hasWarmupFields && (
                         <div className="space-y-3 mb-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-ocean-400">🔥</span>
+                            <span className="text-ocean-400">{'\u{1F525}'}</span>
                             <span className="text-sm font-medium text-deep-300">Warm-up</span>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1126,7 +645,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                       {hasMainFields && (
                         <div className="space-y-3 mb-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-ocean-400">⚡</span>
+                            <span className="text-ocean-400">{'\u26A1'}</span>
                             <span className="text-sm font-medium text-deep-300">Main Session</span>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1156,7 +675,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                       {hasCooldownFields && (
                         <div className="space-y-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-ocean-400">❄️</span>
+                            <span className="text-ocean-400">{'\u2744\uFE0F'}</span>
                             <span className="text-sm font-medium text-deep-300">Cool-down</span>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1264,7 +783,7 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
 
                 <div className="space-y-2">
                   <h3 className="font-medium text-white mb-3">Session Phases:</h3>
-                  {parseSessionPhases(showSessionDetails.focus, currentMaxHold || 240).map((phase, index) => (
+                  {parseSessionPhases(showSessionDetails.focus, SESSION_TEMPLATES[showSessionDetails.focus] || {}, currentMaxHold || 240).map((phase: Phase, index: number) => (
                     <div key={index} className="flex items-center gap-3 p-3 bg-deep-800/50 rounded-lg">
                       <span className="text-lg">{getPhaseIcon(phase.type)}</span>
                       <div className="flex-1">
@@ -1306,8 +825,8 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                   <div className="text-sm text-deep-300">
                     <p><strong>Total Session Time:</strong> {
                       formatTime(
-                        parseSessionPhases(showSessionDetails.focus, currentMaxHold || 240)
-                          .reduce((total, phase) => total + phase.duration, 0)
+                        parseSessionPhases(showSessionDetails.focus, SESSION_TEMPLATES[showSessionDetails.focus] || {}, currentMaxHold || 240)
+                          .reduce((total: number, phase: Phase) => total + phase.duration, 0)
                       )
                     }</p>
                   </div>
@@ -1331,14 +850,14 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <p className="text-deep-300 text-lg">{currentInstruction.description}</p>
-              
+
               <div>
                 <h4 className="text-white font-semibold mb-3">Instructions:</h4>
                 <ol className="space-y-2">
-                  {currentInstruction.steps.map((step, index) => (
+                  {currentInstruction.steps.map((step: string, index: number) => (
                     <li key={index} className="text-deep-300 flex">
                       <span className="text-ocean-400 font-semibold mr-2">{index + 1}.</span>
                       <span>{step}</span>
@@ -1354,4 +873,4 @@ const WeekPlan = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleCompl
   );
 };
 
-export default WeekPlan; 
+export default WeekPlan;

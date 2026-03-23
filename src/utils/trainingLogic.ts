@@ -1,19 +1,12 @@
 import dayjs from 'dayjs';
+import { Session } from '../types/index';
 
 // Training schedule constants
-export const START_DATE = '2025-08-02';
-export const FOCUS_AREAS = {
-  1: 'Maximal Breath-Hold Training',
-  2: 'Breath Control', 
-  3: 'O₂ Tolerance',
-  4: 'Mental + Technique',
-  5: 'Advanced CO₂ Table',
-  6: 'Max Breath-Hold',
-  7: 'Recovery & Flexibility',
-  8: 'Traditional CO₂ Tables'
-};
-
-export const SESSION_TYPES = {
+// START_DATE removed — schedules now start from today's date.
+// Kept as a deprecated export for backward compatibility during migration.
+/** @deprecated Use `new Date().toISOString().split('T')[0]` instead */
+export const START_DATE: string = new Date().toISOString().split('T')[0];
+export const FOCUS_AREAS: Record<number, string> = {
   1: 'Maximal Breath-Hold Training',
   2: 'Breath Control',
   3: 'O₂ Tolerance',
@@ -24,13 +17,15 @@ export const SESSION_TYPES = {
   8: 'Traditional CO₂ Tables'
 };
 
+// SESSION_TYPES removed - use FOCUS_AREAS instead (they were identical)
+
 // Generate session details based on max hold time and weekday
-export function generateSessionDetails(weekday, maxHoldSeconds) {
+export function generateSessionDetails(weekday: number, maxHoldSeconds: number | null): string {
   if (!maxHoldSeconds) {
     return 'Set your max hold time to see personalized session details';
   }
 
-  const details = {
+  const details: Record<number, string> = {
     1: `3× maximal breath-hold attempts with 4min rest periods. Evidence-based training for optimal adaptation. ~15min total`,
     2: `10min diaphragmatic + 5min alternate nostril + 8× box breathing (4-4-4-4) + 2min recovery. ~25min total`,
     3: `5× progressive holds (60% → 95% of max). Evidence-based progression to near-maximum. Fixed 3min rest. ~25min total`,
@@ -45,21 +40,21 @@ export function generateSessionDetails(weekday, maxHoldSeconds) {
 }
 
 // Get weekday (1-7, where 1 is Monday)
-export function getWeekday(date) {
-  const day = dayjs(date).day();
+export function getWeekday(date: string | Date | dayjs.Dayjs): number {
+  const day = dayjs(date as string).day();
   return day === 0 ? 7 : day; // Convert Sunday (0) to 7
 }
 
 // Generate training schedule for a date range
-export function generateSchedule(startDate, endDate, maxHoldSeconds) {
-  const schedule = [];
+export function generateSchedule(startDate: string, endDate: string | Date, maxHoldSeconds: number | null): Session[] {
+  const schedule: Session[] = [];
   let currentDate = dayjs(startDate);
   const end = dayjs(endDate);
 
   while (currentDate.isBefore(end) || currentDate.isSame(end, 'day')) {
     const weekday = getWeekday(currentDate);
     const focus = FOCUS_AREAS[weekday];
-    const sessionType = SESSION_TYPES[weekday];
+    const sessionType = FOCUS_AREAS[weekday];
     const details = generateSessionDetails(weekday, maxHoldSeconds);
 
     schedule.push({
@@ -80,16 +75,16 @@ export function generateSchedule(startDate, endDate, maxHoldSeconds) {
 }
 
 // Get latest max hold time from session data
-export function getLatestMaxHold(sessions) {
+export function getLatestMaxHold(sessions: Session[]): number | null {
   const maxHolds = sessions
     .filter(session => session.actualMaxHold !== null && session.actualMaxHold > 0)
     .sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf());
-  
+
   return maxHolds.length > 0 ? maxHolds[0].actualMaxHold : null;
 }
 
 // Format time in MM:SS format
-export function formatTime(seconds) {
+export function formatTime(seconds: number | null | undefined): string {
   if (!seconds || seconds < 0) return '00:00';
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
@@ -97,14 +92,14 @@ export function formatTime(seconds) {
 }
 
 // Parse time from MM:SS format
-export function parseTime(timeString) {
+export function parseTime(timeString: string | null | undefined): number {
   if (!timeString) return 0;
   const [mins, secs] = timeString.split(':').map(Number);
   return (mins * 60) + (secs || 0);
 }
 
 // Calculate progress percentage
-export function calculateProgress(sessions) {
+export function calculateProgress(sessions: Session[]): number {
   const completed = sessions.filter(s => s.completed).length;
   return sessions.length > 0 ? Math.round((completed / sessions.length) * 100) : 0;
-} 
+}
