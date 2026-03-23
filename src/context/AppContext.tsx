@@ -8,8 +8,10 @@ import {
   Profile,
   Profiles,
   WeeklySchedule,
-  CustomPhase
+  CustomPhase,
+  AudioPreferences
 } from '../types';
+import { DEFAULT_AUDIO_PREFERENCES } from '../hooks/useAudioCues';
 
 // ---- Electron API type declaration ----
 declare global {
@@ -54,6 +56,7 @@ export const initialState: AppState = {
   notification: null,
 
   // Modal states
+  showOnboarding: false,
   showProfileModal: false,
   showMaxHoldModal: false,
   showCustomSessionCreator: false,
@@ -333,7 +336,8 @@ const createDefaultProfile = (): Profile => {
     sessions: defaultSchedule,
     currentMaxHold: DEFAULT_MAX_HOLD,
     customSessions: {},
-    weeklySchedule: { ...DEFAULT_WEEKLY_SCHEDULE }
+    weeklySchedule: { ...DEFAULT_WEEKLY_SCHEDULE },
+    audioPreferences: { ...DEFAULT_AUDIO_PREFERENCES }
   };
 };
 
@@ -372,10 +376,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         });
         dispatch({ type: ACTIONS.LOAD_PROFILE_DATA, payload: 'default' });
 
-        // Show max hold modal for new users
-        dispatch({ type: ACTIONS.SET_NEW_PROFILE_NAME, payload: 'Default Profile' });
-        dispatch({ type: ACTIONS.SET_NEW_PROFILE_MAX_HOLD, payload: '240' });
-        dispatch({ type: ACTIONS.SHOW_MODAL, payload: 'showMaxHoldModal' });
+        // Show onboarding modal for new users
+        dispatch({ type: ACTIONS.SHOW_MODAL, payload: 'showOnboarding' });
       }
 
       dispatch({ type: ACTIONS.SET_LOADING, payload: false });
@@ -536,6 +538,7 @@ export const useUI = () => {
 export const useModals = () => {
   const { state } = useAppContext();
   return {
+    showOnboarding: state.showOnboarding,
     showProfileModal: state.showProfileModal,
     showMaxHoldModal: state.showMaxHoldModal,
     showCustomSessionCreator: state.showCustomSessionCreator,

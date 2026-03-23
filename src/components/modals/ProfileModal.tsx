@@ -21,12 +21,12 @@ function ProfileModal({ onSwitchProfile, onCreateProfile, onDeleteProfile }: Pro
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
-      <div className="bg-deep-800 rounded-lg p-6 max-w-md w-full mx-4">
+      <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-md w-full mx-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 id="profile-modal-title" className="text-lg font-semibold text-white">Profile Management</h3>
+          <h3 id="profile-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">Profile Management</h3>
           <button
             onClick={() => setShowProfileModal(false)}
-            className="text-deep-400 hover:text-white"
+            className="text-gray-400 dark:text-deep-400 hover:text-gray-600 dark:hover:text-white"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -36,13 +36,13 @@ function ProfileModal({ onSwitchProfile, onCreateProfile, onDeleteProfile }: Pro
         <div className="space-y-4">
           {/* Current Profiles */}
           <div>
-            <h4 className="text-sm font-medium text-deep-300 mb-2">Current Profiles</h4>
+            <h4 className="text-sm font-medium text-gray-500 dark:text-deep-300 mb-2">Current Profiles</h4>
             <div className="space-y-2">
               {Object.entries(profiles).map(([id, profile]: [string, Profile]) => (
-                <div key={id} className="flex items-center justify-between p-3 bg-deep-700 rounded">
+                <div key={id} className="flex items-center justify-between p-3 bg-gray-100 dark:bg-deep-700 rounded">
                   <div>
-                    <div className="text-white font-medium">{profile.name}</div>
-                    <div className="text-xs text-deep-400">
+                    <div className="text-gray-900 dark:text-white font-medium">{profile.name}</div>
+                    <div className="text-xs text-gray-400 dark:text-deep-400">
                       Created: {new Date(profile.created).toLocaleDateString()}
                     </div>
                   </div>
@@ -73,13 +73,13 @@ function ProfileModal({ onSwitchProfile, onCreateProfile, onDeleteProfile }: Pro
 
           {/* Create New Profile */}
           <div>
-            <h4 className="text-sm font-medium text-deep-300 mb-2">Create New Profile</h4>
+            <h4 className="text-sm font-medium text-gray-500 dark:text-deep-300 mb-2">Create New Profile</h4>
             <div className="flex gap-2">
               <input
                 type="text"
                 id="newProfileName"
                 placeholder="Enter profile name"
-                className="flex-1 bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+                className="flex-1 bg-gray-100 dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white"
                 onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
                   if (e.key === 'Enter') {
                     const name = (e.target as HTMLInputElement).value.trim();
@@ -108,7 +108,7 @@ function ProfileModal({ onSwitchProfile, onCreateProfile, onDeleteProfile }: Pro
 
           {/* Profile Import/Export */}
           <div>
-            <h4 className="text-sm font-medium text-deep-300 mb-2">Import/Export Profiles</h4>
+            <h4 className="text-sm font-medium text-gray-500 dark:text-deep-300 mb-2">Import/Export Profiles</h4>
             <div className="flex gap-2">
               <button
                 onClick={async () => {

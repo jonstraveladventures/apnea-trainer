@@ -3,9 +3,10 @@ import { useTimerContext } from '../context/TimerContext';
 import { getExerciseTypeFromPhase } from '../utils/phaseUtils';
 import { exerciseInstructions } from '../utils/exerciseInstructions';
 import { Phase } from '../types';
+import { UseAudioCuesReturn } from './useAudioCues';
 
 interface UseSessionTimerProps {
-  audio: { play: () => void } | null;
+  audioCues: UseAudioCuesReturn;
   onSessionComplete?: (sessionTime: number) => void;
 }
 
@@ -38,7 +39,7 @@ interface StateRefValue {
  *
  * Returns handler functions that the Timer component wires to UI controls.
  */
-const useSessionTimer = ({ audio, onSessionComplete }: UseSessionTimerProps): UseSessionTimerReturn => {
+const useSessionTimer = ({ audioCues, onSessionComplete }: UseSessionTimerProps): UseSessionTimerReturn => {
   const { state, actions }: any = useTimerContext();
   const {
     isRunning, time, sessionTime, isSessionActive,
@@ -61,6 +62,9 @@ const useSessionTimer = ({ audio, onSessionComplete }: UseSessionTimerProps): Us
   const endSession = useCallback((): void => {
     actions.pauseTimer();
     const s = stateRef.current;
+    if (s.audioEnabled) {
+      audioCues.playCue('sessionComplete');
+    }
     const summary = {
       totalTime: s.sessionTime || sessionTime,
       totalPhases: sessionPhases.length,
@@ -71,7 +75,7 @@ const useSessionTimer = ({ audio, onSessionComplete }: UseSessionTimerProps): Us
     if (onSessionComplete && (s.sessionTime || sessionTime) > 0) {
       onSessionComplete(s.sessionTime || sessionTime);
     }
-  }, [actions, sessionTime, sessionPhases.length, currentPhase, selectedSessionType, onSessionComplete]);
+  }, [actions, sessionTime, sessionPhases.length, currentPhase, selectedSessionType, onSessionComplete, audioCues]);
 
   // ---- Timer interval effect ----
   useEffect(() => {
@@ -86,18 +90,28 @@ const useSessionTimer = ({ audio, onSessionComplete }: UseSessionTimerProps): Us
         if (isSessionActive && currentPhaseData && currentPhaseData.type !== 'stretch_confirmation') {
           newPhaseTime = s.phaseTime + 1;
 
-          // Audio trigger 6 seconds before phase end
-          if (s.audioEnabled && audio && currentPhaseData.duration > 0 && newPhaseTime === currentPhaseData.duration - 6) {
-            audio.play();
+          // Audio trigger 6 seconds before phase end (countdown cue)
+          if (s.audioEnabled && currentPhaseData.duration > 0 && newPhaseTime === currentPhaseData.duration - 6) {
+            audioCues.playCue('countdown');
           }
 
           // Phase completion
           if (currentPhaseData.duration > 0 && newPhaseTime >= currentPhaseData.duration) {
+            // Play phase-end cue
+            if (s.audioEnabled) {
+              audioCues.playCue('phaseEnd');
+            }
+
             actions.setShowNextPhaseInstructions(false);
             actions.setNextPhaseInstruction(null);
             if (currentPhase < sessionPhases.length - 1) {
               actions.nextPhase();
               newPhaseTime = 0;
+
+              // Play phase-start cue for the next phase
+              if (s.audioEnabled) {
+                audioCues.playCue('phaseStart');
+              }
             } else {
               endSession();
             }
@@ -143,7 +157,12 @@ const useSessionTimer = ({ audio, onSessionComplete }: UseSessionTimerProps): Us
     }
     actions.startSession(sessionPhases[0]?.type === 'rest');
     actions.startTimer();
-  }, [actions, sessionPhases]);
+
+    // Play phase-start cue for the first phase
+    if (stateRef.current.audioEnabled) {
+      audioCues.playCue('phaseStart');
+    }
+  }, [actions, sessionPhases, audioCues]);
 
   const pauseSession = useCallback((): void => {
     actions.pauseSession();
@@ -171,25 +190,34 @@ const useSessionTimer = ({ audio, onSessionComplete }: UseSessionTimerProps): Us
     actions.setStretchConfirmed(true);
     if (currentPhase < sessionPhases.length - 1) {
       actions.nextPhase();
+      if (stateRef.current.audioEnabled) {
+        audioCues.playCue('phaseStart');
+      }
     } else {
       endSession();
     }
-  }, [actions, currentPhase, sessionPhases.length, endSession]);
+  }, [actions, currentPhase, sessionPhases.length, endSession, audioCues]);
 
   const handleMaxHoldComplete = useCallback((): void => {
     actions.setMaxHoldCompleted(true);
     if (currentPhase < sessionPhases.length - 1) {
       actions.nextPhase();
+      if (stateRef.current.audioEnabled) {
+        audioCues.playCue('phaseStart');
+      }
     } else {
       endSession();
     }
-  }, [actions, currentPhase, sessionPhases.length, endSession]);
+  }, [actions, currentPhase, sessionPhases.length, endSession, audioCues]);
 
   const handleSkipPhase = useCallback((): void => {
     if (currentPhase < sessionPhases.length - 1) {
       actions.nextPhase();
+      if (stateRef.current.audioEnabled) {
+        audioCues.playCue('phaseStart');
+      }
     }
-  }, [actions, currentPhase, sessionPhases.length]);
+  }, [actions, currentPhase, sessionPhases.length, audioCues]);
 
   const handlePhaseTimeAdjust = useCallback((newTime: number): void => {
     if (isSessionActive && sessionPhases[currentPhase]) {

@@ -26,7 +26,7 @@ const SessionSummary: React.FC<SessionSummaryProps> = ({
         <div className="text-lg font-semibold text-green-400 mb-2">
           Session Complete!
         </div>
-        <div className="space-y-1 text-sm text-deep-300">
+        <div className="space-y-1 text-sm text-gray-500 dark:text-deep-300">
           <div>Focus: {sessionSummary?.focus || 'Unknown'}</div>
           <div>Total Time: {formatTime(sessionSummary?.totalTime || 0)}</div>
           <div>Phases Completed: {sessionSummary?.completedPhases || 0}/{sessionSummary?.totalPhases || 0}</div>

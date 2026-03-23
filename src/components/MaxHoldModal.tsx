@@ -57,7 +57,7 @@ const MaxHoldModal: React.FC<MaxHoldModalProps> = ({ isOpen, onClose, onSave, cu
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="max-hold-modal-title">
-      <div className="bg-deep-800 rounded-xl p-6 max-w-md w-full mx-4 border border-deep-700">
+      <div className="bg-white dark:bg-deep-800 rounded-xl p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-deep-700">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-ocean-400" />
@@ -65,7 +65,7 @@ const MaxHoldModal: React.FC<MaxHoldModalProps> = ({ isOpen, onClose, onSave, cu
           </div>
           <button
             onClick={handleCancel}
-            className="text-deep-400 hover:text-white p-1"
+            className="text-gray-400 dark:text-deep-400 hover:text-gray-600 dark:hover:text-white p-1"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -73,17 +73,17 @@ const MaxHoldModal: React.FC<MaxHoldModalProps> = ({ isOpen, onClose, onSave, cu
         </div>
 
         <div className="mb-6">
-          <p className="text-deep-300 mb-4">
+          <p className="text-gray-500 dark:text-deep-300 mb-4">
             To provide personalized training sessions, we need to know your current maximum breath-hold time.
             This will be used to calculate appropriate training intensities.
           </p>
 
-          <div className="bg-deep-900 rounded-lg p-4 mb-4">
+          <div className="bg-gray-50 dark:bg-deep-900 rounded-lg p-4 mb-4">
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle className="w-4 h-4 text-yellow-400" />
               <span className="text-sm font-medium text-yellow-400">Safety Note</span>
             </div>
-            <p className="text-xs text-deep-400">
+            <p className="text-xs text-gray-400 dark:text-deep-400">
               Only enter a time you've actually achieved in a safe training environment.
               Never push beyond your limits during training.
             </p>
@@ -91,7 +91,7 @@ const MaxHoldModal: React.FC<MaxHoldModalProps> = ({ isOpen, onClose, onSave, cu
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-deep-300 mb-2">
+          <label className="block text-sm font-medium text-gray-500 dark:text-deep-300 mb-2">
             Maximum Breath-Hold Time
           </label>
           <div className="flex items-center gap-2">
@@ -105,7 +105,7 @@ const MaxHoldModal: React.FC<MaxHoldModalProps> = ({ isOpen, onClose, onSave, cu
                 className="input-field w-full text-center"
                 placeholder="0"
               />
-              <div className="text-xs text-deep-500 text-center mt-1">Minutes</div>
+              <div className="text-xs text-gray-400 dark:text-deep-500 text-center mt-1">Minutes</div>
             </div>
             <div className="text-2xl text-deep-400">:</div>
             <div className="flex-1">
@@ -118,7 +118,7 @@ const MaxHoldModal: React.FC<MaxHoldModalProps> = ({ isOpen, onClose, onSave, cu
                 className="input-field w-full text-center"
                 placeholder="00"
               />
-              <div className="text-xs text-deep-500 text-center mt-1">Seconds</div>
+              <div className="text-xs text-gray-400 dark:text-deep-500 text-center mt-1">Seconds</div>
             </div>
           </div>
         </div>

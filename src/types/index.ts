@@ -166,6 +166,8 @@ export interface Profile {
   currentMaxHold: number | null;
   customSessions: CustomSessions;
   weeklySchedule: WeeklySchedule;
+  audioPreferences?: AudioPreferences;
+  hasCompletedOnboarding?: boolean;
 }
 
 export type Profiles = Record<string, Profile>;
@@ -185,6 +187,7 @@ export interface AppState {
   isLoading: boolean;
   notification: AppNotification | null;
   // Modal states
+  showOnboarding: boolean;
   showProfileModal: boolean;
   showMaxHoldModal: boolean;
   showCustomSessionCreator: boolean;
@@ -247,3 +250,20 @@ export interface ExerciseInstruction {
 }
 
 export type ExerciseInstructionsMap = Record<string, ExerciseInstruction>;
+
+// ---- Audio cue types ----
+
+export type AudioCueType = 'countdown' | 'phaseStart' | 'phaseEnd' | 'sessionComplete';
+export type AudioSound = 'beep' | 'chime' | 'tone-low' | 'tone-high' | 'none';
+
+export interface AudioCueConfig {
+  enabled: boolean;
+  sound: AudioSound;
+}
+
+export interface AudioPreferences {
+  countdown: AudioCueConfig;        // existing: 6s before phase end
+  phaseStart: AudioCueConfig;       // when phase begins
+  phaseEnd: AudioCueConfig;         // when phase completes
+  sessionComplete: AudioCueConfig;  // when session finishes
+}

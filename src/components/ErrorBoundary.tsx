@@ -37,14 +37,14 @@ class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="card p-8 text-center">
           <div className="text-4xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-white mb-2">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
             {this.props.fallbackTitle || 'Something went wrong'}
           </h2>
-          <p className="text-deep-300 mb-4">
+          <p className="text-gray-500 dark:text-deep-300 mb-4">
             An error occurred while rendering this section. Your data is safe.
           </p>
           {this.state.error && (
-            <p className="text-deep-400 text-sm mb-4 font-mono bg-deep-700 p-3 rounded">
+            <p className="text-gray-400 dark:text-deep-400 text-sm mb-4 font-mono bg-gray-100 dark:bg-deep-700 p-3 rounded">
               {this.state.error.message}
             </p>
           )}

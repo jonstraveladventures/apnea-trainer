@@ -1,0 +1,24 @@
+{
+  "short_name": "Apnea",
+  "name": "Apnea Trainer",
+  "description": "Evidence-based breath-hold training for freedivers",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0284c7",
+  "background_color": "#0f172a",
+  "orientation": "portrait"
+}

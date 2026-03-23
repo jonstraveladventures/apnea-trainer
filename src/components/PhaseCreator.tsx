@@ -71,11 +71,11 @@ const PhaseCreator: React.FC<PhaseCreatorProps> = ({ phaseType, onCreate, onCanc
     const renderDurationFields = (): React.ReactNode => (
       <>
         <div>
-          <label className="text-sm text-deep-300 mb-2 block">Duration Type:</label>
+          <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Duration Type:</label>
           <select
             value={phaseData.durationType}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPhaseData(prev => ({ ...prev, durationType: e.target.value as DurationType }))}
-            className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+            className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white"
           >
             <option value="fixed">Fixed Duration</option>
             {hasPreviousPhase && (
@@ -87,12 +87,12 @@ const PhaseCreator: React.FC<PhaseCreatorProps> = ({ phaseType, onCreate, onCanc
 
         {phaseData.durationType === 'fixed' && (
           <div>
-            <label className="text-sm text-deep-300 mb-2 block">Duration (seconds):</label>
+            <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Duration (seconds):</label>
             <input
               type="number"
               value={phaseData.duration}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhaseData(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
-              className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+              className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white"
               min="1"
             />
           </div>
@@ -100,12 +100,12 @@ const PhaseCreator: React.FC<PhaseCreatorProps> = ({ phaseType, onCreate, onCanc
 
         {phaseData.durationType === 'progressive' && (
           <div>
-            <label className="text-sm text-deep-300 mb-2 block">Change from Previous Phase (seconds):</label>
+            <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Change from Previous Phase (seconds):</label>
             <input
               type="number"
               value={phaseData.progressiveChange}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhaseData(prev => ({ ...prev, progressiveChange: parseInt(e.target.value) || 0 }))}
-              className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+              className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white"
               placeholder="e.g., 10 to add 10s, -5 to subtract 5s"
             />
           </div>
@@ -113,12 +113,12 @@ const PhaseCreator: React.FC<PhaseCreatorProps> = ({ phaseType, onCreate, onCanc
 
         {phaseData.durationType === 'maxHold' && (
           <div>
-            <label className="text-sm text-deep-300 mb-2 block">Percentage of Max Hold (%):</label>
+            <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Percentage of Max Hold (%):</label>
             <input
               type="number"
               value={phaseData.maxHoldPercentage}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhaseData(prev => ({ ...prev, maxHoldPercentage: parseInt(e.target.value) || 0 }))}
-              className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+              className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white"
               min="1"
               max="100"
             />
@@ -133,22 +133,22 @@ const PhaseCreator: React.FC<PhaseCreatorProps> = ({ phaseType, onCreate, onCanc
           <div className="space-y-4">
             {renderDurationFields()}
             <div>
-              <label className="text-sm text-deep-300 mb-2 block">Description:</label>
+              <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Description:</label>
               <input
                 type="text"
                 value={phaseData.description}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhaseData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="e.g., Progressive breath hold"
-                className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+                className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="text-sm text-deep-300 mb-2 block">Instructions:</label>
+              <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Instructions:</label>
               <textarea
                 value={phaseData.instructions}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPhaseData(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="e.g., Take a deep breath and hold..."
-                className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white h-20"
+                className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white h-20"
               />
             </div>
           </div>
@@ -159,11 +159,11 @@ const PhaseCreator: React.FC<PhaseCreatorProps> = ({ phaseType, onCreate, onCanc
           <div className="space-y-4">
             {renderDurationFields()}
             <div>
-              <label className="text-sm text-deep-300 mb-2 block">Breathing Type:</label>
+              <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Breathing Type:</label>
               <select
                 value={phaseData.description}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPhaseData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+                className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white"
               >
                 <option value="">Select breathing type...</option>
                 <option value="Tidal Breathing">Tidal Breathing</option>
@@ -174,12 +174,12 @@ const PhaseCreator: React.FC<PhaseCreatorProps> = ({ phaseType, onCreate, onCanc
               </select>
             </div>
             <div>
-              <label className="text-sm text-deep-300 mb-2 block">Instructions:</label>
+              <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Instructions:</label>
               <textarea
                 value={phaseData.instructions}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPhaseData(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="e.g., Breathe naturally and rhythmically..."
-                className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white h-20"
+                className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white h-20"
               />
             </div>
           </div>
@@ -189,23 +189,23 @@ const PhaseCreator: React.FC<PhaseCreatorProps> = ({ phaseType, onCreate, onCanc
         return (
           <div className="space-y-4">
             <div>
-              <label className="text-sm text-deep-300 mb-2 block">Phase Name:</label>
+              <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Phase Name:</label>
               <input
                 type="text"
                 value={phaseData.description}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhaseData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="e.g., Custom Exercise, Warm-up, Cool-down"
-                className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+                className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white"
               />
             </div>
             {renderDurationFields()}
             <div>
-              <label className="text-sm text-deep-300 mb-2 block">Instructions:</label>
+              <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Instructions:</label>
               <textarea
                 value={phaseData.instructions}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPhaseData(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="Describe what to do during this phase..."
-                className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white h-20"
+                className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white h-20"
               />
             </div>
           </div>
@@ -216,11 +216,11 @@ const PhaseCreator: React.FC<PhaseCreatorProps> = ({ phaseType, onCreate, onCanc
           <div className="space-y-4">
             {renderDurationFields()}
             <div>
-              <label className="text-sm text-deep-300 mb-2 block">Mental Exercise Type:</label>
+              <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Mental Exercise Type:</label>
               <select
                 value={phaseData.description}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPhaseData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+                className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white"
               >
                 <option value="">Select mental exercise...</option>
                 <option value="Visualization">Visualization</option>
@@ -230,12 +230,12 @@ const PhaseCreator: React.FC<PhaseCreatorProps> = ({ phaseType, onCreate, onCanc
               </select>
             </div>
             <div>
-              <label className="text-sm text-deep-300 mb-2 block">Instructions:</label>
+              <label className="text-sm text-gray-500 dark:text-deep-300 mb-2 block">Instructions:</label>
               <textarea
                 value={phaseData.instructions}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPhaseData(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="e.g., Visualize yourself underwater..."
-                className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white h-20"
+                className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white h-20"
               />
             </div>
           </div>

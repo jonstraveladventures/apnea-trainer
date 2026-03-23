@@ -11,10 +11,12 @@ import { parseSessionPhases as parseSessionPhasesFromUtils } from '../utils/sess
 import { useTimerContext } from '../context/TimerContext';
 import { getExerciseTypeFromPhase, getPhaseGuidance, getTimerColor } from '../utils/phaseUtils';
 import { exerciseInstructions } from '../utils/exerciseInstructions';
-import useAudio from '../hooks/useAudio';
+import useAudioCues from '../hooks/useAudioCues';
 import useSessionTimer from '../hooks/useSessionTimer';
 import useSessionSetup from '../hooks/useSessionSetup';
-import { Session, Phase, CustomSessions, SessionTemplates } from '../types';
+import { useAppContext } from '../context/AppContext';
+import { DEFAULT_AUDIO_PREFERENCES } from '../hooks/useAudioCues';
+import { Session, Phase, CustomSessions, SessionTemplates, AudioPreferences } from '../types';
 
 interface TimerProps {
   onSessionComplete: (sessionTime: number) => void;
@@ -44,9 +46,14 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
   const [showMaxHoldModal, setShowMaxHoldModal] = useState<boolean>(false);
   const [audioEnabled, setAudioEnabledLocal] = useState<boolean>(true);
 
+  // ---- Audio preferences from profile ----
+  const { state: appState } = useAppContext();
+  const currentProfileData = appState.profiles[appState.currentProfile];
+  const audioPreferences: AudioPreferences = currentProfileData?.audioPreferences ?? DEFAULT_AUDIO_PREFERENCES;
+
   // ---- Hooks ----
-  const countdownAudio = useAudio('/audio/countdown-5-4-3-2-1.mp3');
-  const timer = useSessionTimer({ audio: countdownAudio, onSessionComplete });
+  const audioCues = useAudioCues(audioPreferences);
+  const timer = useSessionTimer({ audioCues, onSessionComplete });
 
   // Parse session details into phases (handles custom sessions)
   const parseSessionPhases = (focus: string, maxHoldSeconds: number): Phase[] => {
@@ -197,7 +204,7 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
             className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
               audioEnabled
                 ? 'bg-ocean-600 hover:bg-ocean-700 text-white'
-                : 'bg-deep-700 hover:bg-deep-600 text-white'
+                : 'bg-gray-200 dark:bg-deep-700 hover:bg-gray-300 dark:hover:bg-deep-600 text-gray-800 dark:text-white'
             }`}
           >
             {audioEnabled ? '\u{1F50A} Audio On' : '\u{1F507} Audio Off'}
@@ -274,8 +281,8 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
 
           {/* Current Phase Instructions */}
           {isSessionActive && sessionPhases[currentPhase] && (
-            <div className="mb-6 p-4 bg-deep-800 rounded-lg border border-deep-700">
-              <h3 className="text-lg font-semibold text-white mb-3">
+            <div className="mb-6 p-4 bg-white dark:bg-deep-800 rounded-lg border border-gray-200 dark:border-deep-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                 {sessionPhases[currentPhase].description}
               </h3>
               {(() => {
@@ -283,12 +290,12 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
                 const instruction = exerciseType ? exerciseInstructions[exerciseType] : null;
                 return instruction ? (
                   <div className="space-y-3">
-                    <p className="text-deep-300">{instruction.description}</p>
+                    <p className="text-gray-500 dark:text-deep-300">{instruction.description}</p>
                     <div>
-                      <h4 className="text-white font-semibold mb-2">Steps:</h4>
+                      <h4 className="text-gray-900 dark:text-white font-semibold mb-2">Steps:</h4>
                       <ol className="space-y-2">
                         {instruction.steps.map((step: string, index: number) => (
-                          <li key={index} className="text-deep-300 flex">
+                          <li key={index} className="text-gray-500 dark:text-deep-300 flex">
                             <span className="text-ocean-400 font-semibold mr-2">{index + 1}.</span>
                             <span>{step}</span>
                           </li>
@@ -297,7 +304,7 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
                     </div>
                   </div>
                 ) : (
-                  <div className="text-deep-300">
+                  <div className="text-gray-500 dark:text-deep-300">
                     {getPhaseGuidance(sessionPhases[currentPhase])}
                   </div>
                 );
@@ -312,12 +319,12 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
                 {'\u23F0'} Next Phase: {nextPhaseInstruction.title}
               </h3>
               <div className="space-y-3">
-                <p className="text-deep-300">{nextPhaseInstruction.description}</p>
+                <p className="text-gray-500 dark:text-deep-300">{nextPhaseInstruction.description}</p>
                 <div>
-                  <h4 className="text-white font-semibold mb-2">Get Ready:</h4>
+                  <h4 className="text-gray-900 dark:text-white font-semibold mb-2">Get Ready:</h4>
                   <ol className="space-y-2">
                     {nextPhaseInstruction.steps.map((step: string, index: number) => (
-                      <li key={index} className="text-deep-300 flex">
+                      <li key={index} className="text-gray-500 dark:text-deep-300 flex">
                         <span className="text-ocean-400 font-semibold mr-2">{index + 1}.</span>
                         <span>{step}</span>
                       </li>
@@ -330,18 +337,18 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
 
           {/* Session Overview */}
           {!isSessionActive && todaySession && sessionPhases.length > 0 && (
-            <div className="mb-6 p-4 bg-deep-800 rounded-lg border border-deep-700">
-              <h3 className="text-lg font-semibold text-white mb-3">
+            <div className="mb-6 p-4 bg-white dark:bg-deep-800 rounded-lg border border-gray-200 dark:border-deep-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                 Session Overview
               </h3>
               <div className="space-y-2">
-                <div className="text-deep-300">
+                <div className="text-gray-500 dark:text-deep-300">
                   <strong>Focus:</strong> {todaySession.focus}
                 </div>
-                <div className="text-deep-300">
+                <div className="text-gray-500 dark:text-deep-300">
                   <strong>Total Phases:</strong> {sessionPhases.length}
                 </div>
-                <div className="text-deep-300">
+                <div className="text-gray-500 dark:text-deep-300">
                   <strong>Estimated Duration:</strong> {formatTime(sessionPhases.reduce((total, phase) => total + phase.duration, 0))}
                 </div>
               </div>
@@ -350,7 +357,7 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
 
           {/* Instructions when no session is active */}
           {!isSessionActive && (
-            <div className="text-center text-deep-400">
+            <div className="text-center text-gray-400 dark:text-deep-400">
               <p>Start a session to see detailed instructions here.</p>
             </div>
           )}
@@ -359,25 +366,25 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
         {/* Exercise Instructions Modal */}
         {showInstructions && currentInstruction && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-white">{currentInstruction.title}</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{currentInstruction.title}</h3>
                 <button
                   onClick={() => timerActions.setShowInstructions(false)}
-                  className="text-deep-400 hover:text-white"
+                  className="text-gray-400 dark:text-deep-400 hover:text-gray-600 dark:hover:text-white"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="space-y-4">
-                <p className="text-deep-300 text-lg">{currentInstruction.description}</p>
+                <p className="text-gray-500 dark:text-deep-300 text-lg">{currentInstruction.description}</p>
 
                 <div>
-                  <h4 className="text-white font-semibold mb-3">Instructions:</h4>
+                  <h4 className="text-gray-900 dark:text-white font-semibold mb-3">Instructions:</h4>
                   <ol className="space-y-2">
                     {currentInstruction.steps.map((step: string, index: number) => (
-                      <li key={index} className="text-deep-300 flex">
+                      <li key={index} className="text-gray-500 dark:text-deep-300 flex">
                         <span className="text-ocean-400 font-semibold mr-2">{index + 1}.</span>
                         <span>{step}</span>
                       </li>

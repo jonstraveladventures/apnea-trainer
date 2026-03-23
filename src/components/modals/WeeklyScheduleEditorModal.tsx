@@ -18,12 +18,12 @@ function WeeklyScheduleEditorModal({ onSave, onChange }: WeeklyScheduleEditorMod
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="weekly-schedule-modal-title">
-      <div className="bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h3 id="weekly-schedule-modal-title" className="text-lg font-semibold text-white">Edit Weekly Schedule</h3>
+          <h3 id="weekly-schedule-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">Edit Weekly Schedule</h3>
           <button
             onClick={handleClose}
-            className="text-deep-400 hover:text-white"
+            className="text-gray-400 dark:text-deep-400 hover:text-gray-600 dark:hover:text-white"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -31,7 +31,7 @@ function WeeklyScheduleEditorModal({ onSave, onChange }: WeeklyScheduleEditorMod
         </div>
 
         <div className="space-y-6">
-          <p className="text-deep-300">
+          <p className="text-gray-500 dark:text-deep-300">
             Choose which session type to assign to each day of the week. This will determine your training schedule.
           </p>
 
@@ -45,17 +45,17 @@ function WeeklyScheduleEditorModal({ onSave, onChange }: WeeklyScheduleEditorMod
               { key: 'saturday' as const, label: 'Saturday' },
               { key: 'sunday' as const, label: 'Sunday' }
             ] as const).map(({ key, label }) => (
-              <div key={key} className="flex items-center justify-between p-4 bg-deep-700 rounded-lg border border-deep-600">
+              <div key={key} className="flex items-center justify-between p-4 bg-gray-100 dark:bg-deep-700 rounded-lg border border-gray-300 dark:border-deep-600">
                 <div>
-                  <h4 className="text-lg font-semibold text-white">{label}</h4>
-                  <p className="text-deep-300 text-sm">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{label}</h4>
+                  <p className="text-gray-500 dark:text-deep-300 text-sm">
                     Current: {weeklySchedule[key]}
                   </p>
                 </div>
                 <select
                   value={weeklySchedule[key]}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(key, e.target.value)}
-                  className="bg-deep-600 border border-deep-500 rounded px-3 py-2 text-white min-w-[200px]"
+                  className="bg-gray-200 dark:bg-deep-600 border border-gray-300 dark:border-deep-500 rounded px-3 py-2 text-gray-900 dark:text-white min-w-[200px]"
                 >
                   <option value="Comfortable CO&#x2082; Training">Comfortable CO&#x2082; Training</option>
                   <option value="O&#x2082; Tolerance">O&#x2082; Tolerance</option>
@@ -74,7 +74,7 @@ function WeeklyScheduleEditorModal({ onSave, onChange }: WeeklyScheduleEditorMod
             ))}
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-deep-700">
+          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-deep-700">
             <button
               onClick={onSave}
               className="btn-primary flex-1"

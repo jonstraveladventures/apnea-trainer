@@ -24,23 +24,23 @@ const SessionPreview: React.FC<SessionPreviewProps> = ({
 
   return (
     <div className="mt-4">
-      <div className="text-sm font-semibold text-deep-300 mb-2">Session Preview:</div>
+      <div className="text-sm font-semibold text-gray-500 dark:text-gray-500 dark:text-deep-300 mb-2">Session Preview:</div>
       <div className="max-h-32 overflow-y-auto space-y-1">
         {sessionPhases
           .filter(phase => phase.type !== 'stretch_confirmation') // Exclude stretch confirmation from preview
           .map((phase, index) => (
-          <div key={index} className="flex items-center justify-between text-xs bg-deep-700 rounded px-2 py-1">
+          <div key={index} className="flex items-center justify-between text-xs bg-gray-100 dark:bg-deep-700 rounded px-2 py-1">
             <div className="flex items-center gap-2">
               <span>{getPhaseIcon(phase.type)}</span>
-              <span className="text-deep-300">{phase.description}</span>
+              <span className="text-gray-500 dark:text-deep-300">{phase.description}</span>
             </div>
-            <span className="text-deep-400 font-mono">
+            <span className="text-gray-400 dark:text-deep-400 font-mono">
               {phase.type === 'max_hold' && phase.percentage === 100 ? 'Max' : formatTime(phase.duration)}
             </span>
           </div>
         ))}
       </div>
-      <div className="text-xs text-deep-500 mt-2">
+      <div className="text-xs text-gray-400 dark:text-deep-500 mt-2">
         Total session time: {formatTime(totalTime)}
       </div>
     </div>

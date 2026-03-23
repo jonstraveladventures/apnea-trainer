@@ -26,7 +26,7 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
         id="session-type-select"
         value={selectedSessionType}
         onChange={(e) => onSessionTypeChange(e.target.value)}
-        className="w-full bg-deep-700 border border-deep-600 rounded px-3 py-2 text-white"
+        className="w-full bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-2 text-gray-900 dark:text-white"
         disabled={isSessionActive}
         aria-label="Select session type"
         aria-disabled={isSessionActive}
@@ -51,7 +51,7 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
         )}
       </select>
       {hasUserChangedSession && todaySession?.focus && selectedSessionType !== todaySession.focus && (
-        <div className="text-xs text-deep-400 mt-1">
+        <div className="text-xs text-gray-400 dark:text-deep-400 mt-1">
           📅 Today's scheduled session: <span className="text-ocean-400">{todaySession.focus}</span>
         </div>
       )}

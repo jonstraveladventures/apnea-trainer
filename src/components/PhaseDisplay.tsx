@@ -115,7 +115,7 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
   const boxSize = 120; // px (slightly smaller)
 
   return (
-    <div className="mb-6 p-4 bg-deep-800 rounded-lg border border-deep-700">
+    <div className="mb-6 p-4 bg-white dark:bg-deep-800 rounded-lg border border-gray-200 dark:border-deep-700">
       <div className="text-center">
         {/* Phase Timer - Prominently displayed at the top */}
         {currentPhaseData.duration > 0 && currentPhaseData.type !== 'stretch_confirmation' && (
@@ -127,7 +127,7 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
                 : formatTime(currentPhaseData.duration - phaseTime)
               }
             </div>
-            <div className="text-sm text-deep-400 mb-3">
+            <div className="text-sm text-gray-400 dark:text-deep-400 mb-3">
               {currentPhaseData.type === 'max_hold' ? 'Hold Time' : 'Time Remaining'}
             </div>
             {/* Box-breathing CSS keyframes fallback (jitter-free) */}
@@ -143,7 +143,7 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
                   >
                     <div className="text-sm text-green-400 text-right whitespace-nowrap">{leftLabel}</div>
                     <div className="relative" style={{ width: boxSize, height: boxSize }}>
-                      <div className="absolute inset-0 border-2 border-deep-600 rounded-sm" />
+                      <div className="absolute inset-0 border-2 border-gray-300 dark:border-deep-600 rounded-sm" />
                       <div
                         className="box-dot bg-ocean-400 shadow"
                         style={{
@@ -156,14 +156,14 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
                     </div>
                     <div className="text-sm text-blue-400 whitespace-nowrap">{rightLabel}</div>
                   </div>
-                  <div className="text-xs text-deep-400">Follow the moving dot clockwise around the square</div>
+                  <div className="text-xs text-gray-400 dark:text-deep-400">Follow the moving dot clockwise around the square</div>
                 </div>
               );
             })()}
             {/* Interactive Phase Progress Bar */}
             <div
               ref={progressBarRef}
-              className="w-full bg-deep-700 rounded-full h-3 mb-2 cursor-pointer relative group"
+              className="w-full bg-gray-200 dark:bg-deep-700 rounded-full h-3 mb-2 cursor-pointer relative group"
               onClick={handleProgressBarClick}
               onMouseDown={handleMouseDown}
               style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
@@ -183,13 +183,13 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
                 title={`${phaseTime}s / ${currentPhaseData.duration}s = ${((phaseTime / currentPhaseData.duration) * 100).toFixed(1)}%`}
               ></div>
               {/* Hover indicator */}
-              <div className="absolute inset-0 bg-transparent group-hover:bg-deep-600/20 rounded-full transition-colors duration-200"></div>
+              <div className="absolute inset-0 bg-transparent group-hover:bg-gray-300/20 dark:group-hover:bg-deep-600/20 rounded-full transition-colors duration-200"></div>
               {/* Drag indicator */}
               {isDragging && (
                 <div className="absolute inset-0 bg-ocean-400/20 rounded-full"></div>
               )}
             </div>
-            <div className="text-xs text-deep-400">
+            <div className="text-xs text-gray-400 dark:text-deep-400">
               {formatTime(phaseTime)} / {formatTime(currentPhaseData.duration)}
                        <span className="ml-2 text-ocean-400">(Click or drag to adjust)</span>
             </div>
@@ -201,10 +201,10 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
           <div className="text-2xl mb-2">
             {getPhaseIcon(currentPhaseData.type)}
           </div>
-          <div className="text-lg font-semibold text-white mb-1">
+          <div className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
             {currentPhaseData.description}
           </div>
-          <div className="text-sm text-deep-400">
+          <div className="text-sm text-gray-400 dark:text-deep-400">
             Phase {currentPhase + 1} of {sessionPhases.length}
           </div>
         </div>
@@ -212,7 +212,7 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
         {/* Stretch Confirmation */}
         {currentPhaseData.type === 'stretch_confirmation' && (
           <div className="mb-4">
-            <div className="text-sm text-deep-300 mb-3">
+            <div className="text-sm text-gray-500 dark:text-deep-300 mb-3">
               Have you completed your stretching routine?
             </div>
             <button
@@ -228,7 +228,7 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
         {/* Max Hold Completion - Only for 100% max holds */}
         {currentPhaseData.type === 'max_hold' && currentPhaseData.isMaxHold && (
           <div className="mb-4">
-            <div className="text-sm text-deep-300 mb-3">
+            <div className="text-sm text-gray-500 dark:text-deep-300 mb-3">
               Press the button when you have completed your max hold
             </div>
             <button
@@ -242,8 +242,8 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
         )}
 
         {/* Session Progress (time-based across entire session) */}
-        <div className="border-t border-deep-700 pt-3">
-          <div className="text-xs text-deep-500 mb-2">Session Progress</div>
+        <div className="border-t border-gray-200 dark:border-deep-700 pt-3">
+          <div className="text-xs text-gray-400 dark:text-deep-500 mb-2">Session Progress</div>
           {(() => {
             const totalDuration = sessionPhases.reduce((sum, p) => sum + (p.duration > 0 ? p.duration : 0), 0);
             const completedDuration = sessionPhases
@@ -256,13 +256,13 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
               : Math.round(((currentPhase + (currentPhaseData.duration > 0 ? (phaseTime / currentPhaseData.duration) : 0)) / sessionPhases.length) * 100);
             return (
               <>
-                <div className="w-full bg-deep-700 rounded-full h-2 mb-2">
+                <div className="w-full bg-gray-200 dark:bg-deep-700 rounded-full h-2 mb-2">
                   <div
                     className="bg-ocean-400 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${percentTime}%` }}
                   ></div>
                 </div>
-                <div className="text-xs text-deep-400">{percentTime}% complete</div>
+                <div className="text-xs text-gray-400 dark:text-deep-400">{percentTime}% complete</div>
               </>
             );
           })()}
@@ -270,9 +270,9 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
 
         {/* Next Phase Preview */}
         {currentPhase < sessionPhases.length - 1 && (
-          <div className="border-t border-deep-700 pt-3 mt-3">
-            <div className="text-xs text-deep-500 mb-1">Next: {sessionPhases[currentPhase + 1].description}</div>
-            <div className="text-xs text-deep-400">
+          <div className="border-t border-gray-200 dark:border-deep-700 pt-3 mt-3">
+            <div className="text-xs text-gray-400 dark:text-deep-500 mb-1">Next: {sessionPhases[currentPhase + 1].description}</div>
+            <div className="text-xs text-gray-400 dark:text-deep-400">
               {getPhaseIcon(sessionPhases[currentPhase + 1].type)} {formatTime(sessionPhases[currentPhase + 1].duration)}
             </div>
           </div>
