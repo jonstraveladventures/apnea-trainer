@@ -129,11 +129,19 @@ Tailwind CSS with `darkMode: 'class'` in `tailwind.config.js`:
 
 ## Audio System
 
-- **useAudioCues hook** generates tones via Web Audio API (OscillatorNode): beep (800Hz), chime (523Hz), tone-low (330Hz), tone-high (1000Hz)
-- **Cue points**: countdown (-6s before phase end), phaseStart, phaseEnd, sessionComplete
+- **useAudioCues hook** synthesizes all sounds via Web Audio API using layered OscillatorNodes — no audio file downloads needed
+- **Available sounds**:
+  - `singing-bowl` — Layered harmonics (A3 + 4 overtones) with long natural decay, warm and resonant
+  - `double-chime-up` — Two ascending notes (C5→E5) with harmonic shimmer, signals "begin"
+  - `double-chime-down` — Two descending notes (E5→C5), signals "complete"
+  - `gentle-bell` — D5 bell with inharmonic partials, soft and subtle
+  - `completion-fanfare` — 4-note ascending arpeggio (C5-E5-G5-C6), celebratory
+  - `soft-pulse` — Low G3 throb with sub-harmonic, gentle awareness cue
+- **Cue points**: countdown (-6s, always mp3 voice), phaseStart, phaseEnd, sessionComplete
+- **Defaults**: All cues enabled — countdown (voice mp3), phaseStart (rising chime), phaseEnd (singing bowl), sessionComplete (fanfare)
 - **AudioSettings component** lets users configure each cue: enable/disable, sound selection, preview
 - Preferences stored per-profile in `audioPreferences` field
-- Original mp3 voice countdown (`public/audio/countdown-5-4-3-2-1.mp3`) is the default for countdown cue
+- Original mp3 voice countdown (`public/audio/countdown-5-4-3-2-1.mp3`) is always used for countdown cue
 
 ## CI/CD
 

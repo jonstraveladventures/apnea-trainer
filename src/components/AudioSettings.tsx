@@ -1,7 +1,7 @@
 import React from 'react';
 import { Volume2, Play } from 'lucide-react';
 import { AudioPreferences, AudioCueType, AudioSound } from '../types';
-import useAudioCues, { DEFAULT_AUDIO_PREFERENCES } from '../hooks/useAudioCues';
+import useAudioCues, { SOUND_LABELS } from '../hooks/useAudioCues';
 
 interface AudioSettingsProps {
   preferences: AudioPreferences;
@@ -11,15 +11,15 @@ interface AudioSettingsProps {
 const CUE_LABELS: Record<AudioCueType, { title: string; description: string }> = {
   countdown: {
     title: 'Countdown',
-    description: '6 seconds before phase ends (voice countdown when set to beep)',
+    description: 'Voice countdown "5, 4, 3, 2, 1" six seconds before phase ends',
   },
   phaseStart: {
     title: 'Phase Start',
-    description: 'Plays when a new phase begins',
+    description: 'Plays when a new phase begins — signals time to start',
   },
   phaseEnd: {
     title: 'Phase End',
-    description: 'Plays when a phase completes',
+    description: 'Plays when a phase completes — you can breathe now',
   },
   sessionComplete: {
     title: 'Session Complete',
@@ -27,12 +27,15 @@ const CUE_LABELS: Record<AudioCueType, { title: string; description: string }> =
   },
 };
 
-const SOUND_OPTIONS: { value: AudioSound; label: string }[] = [
-  { value: 'beep', label: 'Beep' },
-  { value: 'chime', label: 'Chime' },
-  { value: 'tone-low', label: 'Low Tone' },
-  { value: 'tone-high', label: 'High Tone' },
-  { value: 'none', label: 'None' },
+/** Sounds available for non-countdown cues */
+const SOUND_OPTIONS: AudioSound[] = [
+  'singing-bowl',
+  'double-chime-up',
+  'double-chime-down',
+  'gentle-bell',
+  'completion-fanfare',
+  'soft-pulse',
+  'none',
 ];
 
 const CUE_TYPES: AudioCueType[] = ['countdown', 'phaseStart', 'phaseEnd', 'sessionComplete'];
@@ -63,12 +66,10 @@ const AudioSettings: React.FC<AudioSettingsProps> = ({ preferences, onSave }) =>
   };
 
   const handlePreview = (cueType: AudioCueType) => {
-    const config = preferences[cueType];
-    if (cueType === 'countdown' && config.sound === 'beep') {
-      // Play the mp3 countdown for preview
+    if (cueType === 'countdown') {
       audioCues.playCue('countdown');
     } else {
-      audioCues.playSound(config.sound);
+      audioCues.playSound(preferences[cueType].sound);
     }
   };
 
@@ -80,17 +81,19 @@ const AudioSettings: React.FC<AudioSettingsProps> = ({ preferences, onSave }) =>
       </h2>
       <p className="text-gray-500 dark:text-deep-300 mb-4">
         Configure sounds that play at key moments during your training session.
+        All sounds are synthesized — no downloads needed.
       </p>
 
       <div className="space-y-4">
         {CUE_TYPES.map((cueType) => {
           const config = preferences[cueType];
           const labels = CUE_LABELS[cueType];
+          const isCountdown = cueType === 'countdown';
 
           return (
             <div
               key={cueType}
-              className="p-4 bg-white dark:bg-deep-800 rounded-lg border border-gray-200 dark:border-deep-700"
+              className="p-4 bg-gray-50 dark:bg-deep-700/50 rounded-lg border border-gray-200 dark:border-deep-700"
             >
               <div className="flex items-center justify-between mb-2">
                 <div>
@@ -122,23 +125,28 @@ const AudioSettings: React.FC<AudioSettingsProps> = ({ preferences, onSave }) =>
 
               {config.enabled && (
                 <div className="flex items-center gap-3 mt-3">
-                  <label className="text-sm text-gray-500 dark:text-deep-300">Sound:</label>
-                  <select
-                    value={config.sound}
-                    onChange={(e) =>
-                      handleSoundChange(cueType, e.target.value as AudioSound)
-                    }
-                    className="bg-gray-100 dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-1.5 text-sm text-gray-900 dark:text-white"
-                  >
-                    {SOUND_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                        {cueType === 'countdown' && opt.value === 'beep'
-                          ? ' (voice countdown)'
-                          : ''}
-                      </option>
-                    ))}
-                  </select>
+                  {isCountdown ? (
+                    <span className="text-sm text-gray-500 dark:text-deep-300 italic">
+                      Voice countdown (mp3)
+                    </span>
+                  ) : (
+                    <>
+                      <label className="text-sm text-gray-500 dark:text-deep-300">Sound:</label>
+                      <select
+                        value={config.sound}
+                        onChange={(e) =>
+                          handleSoundChange(cueType, e.target.value as AudioSound)
+                        }
+                        className="bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-1.5 text-sm text-gray-900 dark:text-white"
+                      >
+                        {SOUND_OPTIONS.map((sound) => (
+                          <option key={sound} value={sound}>
+                            {SOUND_LABELS[sound]}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  )}
 
                   <button
                     onClick={() => handlePreview(cueType)}

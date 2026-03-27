@@ -254,7 +254,14 @@ export type ExerciseInstructionsMap = Record<string, ExerciseInstruction>;
 // ---- Audio cue types ----
 
 export type AudioCueType = 'countdown' | 'phaseStart' | 'phaseEnd' | 'sessionComplete';
-export type AudioSound = 'beep' | 'chime' | 'tone-low' | 'tone-high' | 'none';
+export type AudioSound =
+  | 'singing-bowl'
+  | 'double-chime-up'
+  | 'double-chime-down'
+  | 'gentle-bell'
+  | 'completion-fanfare'
+  | 'soft-pulse'
+  | 'none';
 
 export interface AudioCueConfig {
   enabled: boolean;
