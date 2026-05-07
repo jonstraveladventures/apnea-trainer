@@ -2,6 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import type { WeeklySchedule } from '../../types';
+import ModalShell from '../ModalShell';
 
 interface WeeklyScheduleEditorModalProps {
   onSave: () => void;
@@ -12,13 +13,15 @@ function WeeklyScheduleEditorModal({ onSave, onChange }: WeeklyScheduleEditorMod
   const { state, actions } = useAppContext();
   const { showWeeklyScheduleEditor, weeklySchedule, currentProfile, profiles } = state;
 
-  if (!showWeeklyScheduleEditor) return null;
-
   const handleClose = (): void => actions.hideModal('showWeeklyScheduleEditor');
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="weekly-schedule-modal-title">
-      <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <ModalShell
+      isOpen={showWeeklyScheduleEditor}
+      onClose={handleClose}
+      labelledBy="weekly-schedule-modal-title"
+      panelClassName="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+    >
         <div className="flex justify-between items-center mb-4">
           <h3 id="weekly-schedule-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">Edit Weekly Schedule</h3>
           <button
@@ -89,8 +92,7 @@ function WeeklyScheduleEditorModal({ onSave, onChange }: WeeklyScheduleEditorMod
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
 

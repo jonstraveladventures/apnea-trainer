@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Clock, AlertCircle } from 'lucide-react';
+import ModalShell from './ModalShell';
 
 interface MaxHoldModalProps {
   isOpen: boolean;
@@ -53,11 +54,13 @@ const MaxHoldModal: React.FC<MaxHoldModalProps> = ({ isOpen, onClose, onSave, cu
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="max-hold-modal-title">
-      <div className="bg-white dark:bg-deep-800 rounded-xl p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-deep-700">
+    <ModalShell
+      isOpen={isOpen}
+      onClose={handleCancel}
+      labelledBy="max-hold-modal-title"
+      panelClassName="bg-white dark:bg-deep-800 rounded-xl p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-deep-700"
+    >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-ocean-400" />
@@ -143,8 +146,7 @@ const MaxHoldModal: React.FC<MaxHoldModalProps> = ({ isOpen, onClose, onSave, cu
             Save & Continue
           </button>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 };
 

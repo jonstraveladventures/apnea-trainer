@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Calendar, Eye } from 'lucide-react';
+import { Calendar, Eye, Play } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getAllSessionTypes } from '../config/sessionTemplates';
 import { exerciseInstructions } from '../utils/exerciseInstructions';
@@ -25,6 +26,7 @@ interface DayInfo {
 }
 
 const WeekPlan: React.FC<WeekPlanProps> = ({ sessions, onSessionUpdate, onAddCustomSession, onToggleComplete, currentMaxHold, customSessions }) => {
+  const navigate = useNavigate();
   const [editingDay, setEditingDay] = useState<string | null>(null);
   const [showCustomSessionModal, setShowCustomSessionModal] = useState<boolean>(false);
   const [showSessionDetails, setShowSessionDetails] = useState<Session | null>(null);
@@ -173,9 +175,18 @@ const WeekPlan: React.FC<WeekPlanProps> = ({ sessions, onSessionUpdate, onAddCus
                     <span className="text-lg">{session.completed ? '\u2713' : '\u25CB'}</span>
                     {session.completed ? 'Completed' : 'Mark Complete'}
                   </button>
+                  {isToday && (
+                    <button
+                      onClick={() => navigate('/timer')}
+                      className="w-full btn-primary text-sm flex items-center justify-center gap-2 py-2 mb-2"
+                    >
+                      <Play className="w-4 h-4" />
+                      Start Session
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowSessionDetails(session)}
-                    className="w-full btn-primary text-sm flex items-center justify-center gap-2 py-2"
+                    className={`w-full text-sm flex items-center justify-center gap-2 py-2 ${isToday ? 'btn-secondary' : 'btn-primary'}`}
                   >
                     <Eye className="w-4 h-4" />
                     View Details
@@ -285,9 +296,18 @@ const WeekPlan: React.FC<WeekPlanProps> = ({ sessions, onSessionUpdate, onAddCus
                     <span className="text-lg">{session.completed ? '\u2713' : '\u25CB'}</span>
                     {session.completed ? 'Completed' : 'Mark Complete'}
                   </button>
+                  {isToday && (
+                    <button
+                      onClick={() => navigate('/timer')}
+                      className="w-full btn-primary text-sm flex items-center justify-center gap-2 py-2 mb-2"
+                    >
+                      <Play className="w-4 h-4" />
+                      Start Session
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowSessionDetails(session)}
-                    className="w-full btn-primary text-sm flex items-center justify-center gap-2 py-2"
+                    className={`w-full text-sm flex items-center justify-center gap-2 py-2 ${isToday ? 'btn-secondary' : 'btn-primary'}`}
                   >
                     <Eye className="w-4 h-4" />
                     View Details

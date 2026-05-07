@@ -5,6 +5,7 @@ import { parseSessionPhases } from '../../utils/sessionParsers';
 import { SESSION_TEMPLATES } from '../../config/sessionTemplates';
 import { getPhaseIcon, getExerciseTypeFromPhase } from '../../utils/phaseUtils';
 import { formatTime } from '../../utils/trainingLogic';
+import ModalShell from '../ModalShell';
 
 interface SessionDetailsModalProps {
   session: Session | null;
@@ -14,19 +15,23 @@ interface SessionDetailsModalProps {
 }
 
 const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({ session, onClose, currentMaxHold, onShowInstructions }) => {
-  if (!session) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
-      <div className="bg-white dark:bg-deep-900 border border-gray-200 dark:border-deep-700 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+    <ModalShell
+      isOpen={!!session}
+      onClose={onClose}
+      labelledBy="session-details-modal-title"
+      panelClassName="bg-white dark:bg-deep-900 border border-gray-200 dark:border-deep-700 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+    >
+      {session && (
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 id="session-details-modal-title" className="text-xl font-semibold text-gray-900 dark:text-white">
               {session.focus} - Complete Session Plan
             </h2>
             <button
               onClick={onClose}
               className="p-1 hover:bg-gray-100 dark:hover:bg-deep-700 rounded"
+              aria-label="Close"
             >
               <X className="w-5 h-5 text-gray-400 dark:text-deep-400" />
             </button>
@@ -92,8 +97,8 @@ const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({ session, onCl
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      )}
+    </ModalShell>
   );
 };
 

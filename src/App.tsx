@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Settings, Download, Upload, X } from 'lucide-react';
 import { useAppContext } from './context/AppContext';
@@ -13,14 +13,19 @@ import {
   formatTime
 } from './utils/trainingLogic';
 import { DEFAULT_WEEKLY_SCHEDULE } from './constants/defaults';
-import TemplateEditorModal from './components/modals/TemplateEditorModal';
 import AppHeader from './components/AppHeader';
-import ProfileModal from './components/modals/ProfileModal';
-import WeeklyScheduleEditorModal from './components/modals/WeeklyScheduleEditorModal';
-import CustomSessionCreatorModal from './components/modals/CustomSessionCreatorModal';
-import OnboardingModal from './components/modals/OnboardingModal';
 import { Session, Profile, WeeklySchedule, CustomPhase } from './types';
 import ErrorBoundary from './components/ErrorBoundary';
+import { validateImportedTrainingData } from './utils/profileValidation';
+import * as logger from './utils/logger';
+import ModalShell from './components/ModalShell';
+
+// Modals are split out — most users never open them in a given session.
+const TemplateEditorModal = lazy(() => import('./components/modals/TemplateEditorModal'));
+const ProfileModal = lazy(() => import('./components/modals/ProfileModal'));
+const WeeklyScheduleEditorModal = lazy(() => import('./components/modals/WeeklyScheduleEditorModal'));
+const CustomSessionCreatorModal = lazy(() => import('./components/modals/CustomSessionCreatorModal'));
+const OnboardingModal = lazy(() => import('./components/modals/OnboardingModal'));
 
 function App() {
   // ---- All state now comes from AppContext ----
@@ -132,15 +137,24 @@ function App() {
     actions.setNewProfileMaxHold('');
   };
 
-  const handleOnboardingComplete = (maxHoldSeconds: number, _focus: string) => {
+  const handleOnboardingComplete = (maxHoldSeconds: number, focus: string) => {
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + 30);
     const schedule = generateSchedule(START_DATE, endDate, maxHoldSeconds);
 
+    // Honour the focus chosen in onboarding — override today's session
+    // (the wizard frames it as "pick a session type to start with").
+    const today = new Date().toISOString().split('T')[0];
+    const personalisedSchedule = focus
+      ? schedule.map((s: Session) =>
+          s.date === today ? { ...s, focus, sessionType: focus } : s
+        )
+      : schedule;
+
     const onboardedProfile: Profile = {
       name: 'Default Profile',
       created: new Date().toISOString(),
-      sessions: schedule,
+      sessions: personalisedSchedule,
       currentMaxHold: maxHoldSeconds,
       customSessions: {},
       weeklySchedule: { ...DEFAULT_WEEKLY_SCHEDULE },
@@ -149,7 +163,7 @@ function App() {
 
     actions.createProfile('default', onboardedProfile);
     actions.setCurrentProfile('default');
-    actions.setSessions(schedule);
+    actions.setSessions(personalisedSchedule);
     actions.setCurrentMaxHold(maxHoldSeconds);
     actions.hideModal('showOnboarding');
 
@@ -213,45 +227,57 @@ function App() {
 
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        try {
-          const data = JSON.parse(e.target?.result as string);
+    if (!file) return;
 
-          actions.setSessions(data.sessions || []);
-          actions.setCurrentMaxHold(data.currentMaxHold || null);
+    const reader = new FileReader();
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(e.target?.result as string);
+      } catch (err) {
+        logger.error('Error parsing imported data:', err);
+        actions.setNotification({
+          message: 'Failed to import data — file is not valid JSON.',
+          type: 'error',
+          duration: 4000,
+        });
+        return;
+      }
 
-          if (data.customSessions && Object.keys(data.customSessions).length > 0) {
-            actions.updateProfile(currentProfile, {
-              customSessions: {
-                ...profiles[currentProfile]?.customSessions,
-                ...data.customSessions
-              }
-            });
-            actions.setNotification({
-              message: `Imported ${Object.keys(data.customSessions).length} custom session(s) successfully!`,
-              type: 'success',
-              duration: 3000
-            });
-          }
+      const result = validateImportedTrainingData(parsed);
+      if (!result.ok || !result.value) {
+        actions.setNotification({
+          message: `Import rejected: ${result.error ?? 'unknown validation error'}`,
+          type: 'error',
+          duration: 5000,
+        });
+        return;
+      }
 
-          if (data.weeklySchedule) {
-            actions.setWeeklySchedule(data.weeklySchedule);
-            actions.updateProfile(currentProfile, { weeklySchedule: data.weeklySchedule });
-          }
+      const data = result.value;
+      if (data.sessions) actions.setSessions(data.sessions);
+      if (data.currentMaxHold !== undefined) actions.setCurrentMaxHold(data.currentMaxHold);
 
-        } catch (error) {
-          console.error('Error parsing imported data:', error);
-          actions.setNotification({
-            message: 'Failed to import data. Please check the file format.',
-            type: 'error',
-            duration: 3000
-          });
-        }
-      };
-      reader.readAsText(file);
-    }
+      if (data.customSessions && Object.keys(data.customSessions).length > 0) {
+        actions.updateProfile(currentProfile, {
+          customSessions: {
+            ...profiles[currentProfile]?.customSessions,
+            ...data.customSessions,
+          },
+        });
+        actions.setNotification({
+          message: `Imported ${Object.keys(data.customSessions).length} custom session(s) successfully!`,
+          type: 'success',
+          duration: 3000,
+        });
+      }
+
+      if (data.weeklySchedule) {
+        actions.setWeeklySchedule(data.weeklySchedule);
+        actions.updateProfile(currentProfile, { weeklySchedule: data.weeklySchedule });
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleAddPhase = (phaseType: string) => {
@@ -388,7 +414,7 @@ function App() {
       <AppHeader onSave={actions.saveData} />
 
       {/* Main Content */}
-      <main className="p-6">
+      <main className="p-3 sm:p-6 pb-24 sm:pb-6">
         <Routes>
           <Route path="/" element={<Navigate to="/weekplan" replace />} />
           <Route path="/weekplan" element={
@@ -436,8 +462,8 @@ function App() {
 
       {/* Quick Actions Panel - Only show on Week Plan page */}
       {location.pathname === '/weekplan' && (
-        <div className="fixed bottom-6 right-6">
-          <div className="bg-white dark:bg-deep-800 rounded-lg p-4 shadow-lg border border-gray-200 dark:border-deep-700">
+        <div className="fixed bottom-3 right-3 sm:bottom-6 sm:right-6 max-w-[calc(100vw-1.5rem)]">
+          <div className="bg-white dark:bg-deep-800 rounded-lg p-3 sm:p-4 shadow-lg border border-gray-200 dark:border-deep-700">
             <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-white">
               <Settings className="w-4 h-4" />
               Quick Actions
@@ -467,27 +493,36 @@ function App() {
         </div>
       )}
 
-      {/* Onboarding Modal (first launch) */}
-      <OnboardingModal
-        isOpen={showOnboarding}
-        onComplete={handleOnboardingComplete}
-      />
+      {/* Lazy-loaded modals — only mounted when their open flag is set so
+          their bundle isn't fetched until the user actually opens one. */}
+      <Suspense fallback={null}>
+        {showOnboarding && (
+          <OnboardingModal
+            isOpen={showOnboarding}
+            onComplete={handleOnboardingComplete}
+          />
+        )}
 
-      <ProfileModal
-        onSwitchProfile={switchProfile}
-        onCreateProfile={createProfile}
-        onDeleteProfile={deleteProfile}
-      />
+        {showProfileModal && (
+          <ProfileModal
+            onSwitchProfile={switchProfile}
+            onCreateProfile={createProfile}
+            onDeleteProfile={deleteProfile}
+          />
+        )}
 
       {/* Max Hold Modal for New Profile */}
-      {showMaxHoldModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-md w-full mx-4">
+      <ModalShell
+        isOpen={showMaxHoldModal}
+        onClose={() => actions.hideModal('showMaxHoldModal')}
+        labelledBy="new-profile-max-hold-title"
+      >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Set Max Breath Hold</h3>
+              <h3 id="new-profile-max-hold-title" className="text-lg font-semibold text-gray-900 dark:text-white">Set Max Breath Hold</h3>
               <button
                 onClick={() => actions.hideModal('showMaxHoldModal')}
                 className="text-gray-400 dark:text-deep-400 hover:text-gray-600 dark:hover:text-white"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -534,24 +569,26 @@ function App() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+      </ModalShell>
 
-      <CustomSessionCreatorModal
-        onSave={handleSaveCustomSession}
-        onAddPhase={handleAddPhase}
-        onCreatePhase={handleCreatePhase}
-        onRemovePhase={handleRemovePhase}
-      />
+        {showCustomSessionCreator && (
+          <CustomSessionCreatorModal
+            onSave={handleSaveCustomSession}
+            onAddPhase={handleAddPhase}
+            onCreatePhase={handleCreatePhase}
+            onRemovePhase={handleRemovePhase}
+          />
+        )}
 
-      <WeeklyScheduleEditorModal
-        onSave={handleSaveWeeklySchedule}
-        onChange={handleWeeklyScheduleChange}
-      />
+        {showWeeklyScheduleEditor && (
+          <WeeklyScheduleEditorModal
+            onSave={handleSaveWeeklySchedule}
+            onChange={handleWeeklyScheduleChange}
+          />
+        )}
 
-      {/* Template Editor Modal */}
-      <TemplateEditorModal />
+        {showTemplateEditor && <TemplateEditorModal />}
+      </Suspense>
     </div>
   );
 }

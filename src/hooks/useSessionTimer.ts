@@ -89,17 +89,34 @@ const useSessionTimer = ({ audioCues, onSessionComplete }: UseSessionTimerProps)
 
         if (isSessionActive && currentPhaseData && currentPhaseData.type !== 'stretch_confirmation') {
           newPhaseTime = s.phaseTime + 1;
+          const phaseCtx = { phaseDescription: currentPhaseData.description };
 
-          // Audio trigger 6 seconds before phase end (countdown cue)
-          if (s.audioEnabled && currentPhaseData.duration > 0 && newPhaseTime === currentPhaseData.duration - 6) {
-            audioCues.playCue('countdown');
+          // Per-minute spoken mark — only fires if there's still meaningful
+          // time remaining in the phase, so it doesn't collide with the
+          // -6s countdown or the phase-end cue.
+          const remaining = currentPhaseData.duration - newPhaseTime;
+          if (
+            s.audioEnabled &&
+            currentPhaseData.duration > 0 &&
+            newPhaseTime > 0 &&
+            newPhaseTime % 60 === 0 &&
+            remaining > 10
+          ) {
+            audioCues.playCue('minuteMark', { minutes: newPhaseTime / 60 });
+          }
+
+          // Audio trigger 5 seconds before phase end (countdown cue) — the
+          // playback begins immediately so "five" lands when the timer shows 5,
+          // "four" when it shows 4, etc.
+          if (s.audioEnabled && currentPhaseData.duration > 0 && newPhaseTime === currentPhaseData.duration - 5) {
+            audioCues.playCue('countdown', phaseCtx);
           }
 
           // Phase completion
           if (currentPhaseData.duration > 0 && newPhaseTime >= currentPhaseData.duration) {
             // Play phase-end cue
             if (s.audioEnabled) {
-              audioCues.playCue('phaseEnd');
+              audioCues.playCue('phaseEnd', phaseCtx);
             }
 
             actions.setShowNextPhaseInstructions(false);
@@ -109,8 +126,9 @@ const useSessionTimer = ({ audioCues, onSessionComplete }: UseSessionTimerProps)
               newPhaseTime = 0;
 
               // Play phase-start cue for the next phase
+              const nextPhase: Phase | undefined = sessionPhases[currentPhase + 1];
               if (s.audioEnabled) {
-                audioCues.playCue('phaseStart');
+                audioCues.playCue('phaseStart', { phaseDescription: nextPhase?.description });
               }
             } else {
               endSession();
@@ -160,7 +178,7 @@ const useSessionTimer = ({ audioCues, onSessionComplete }: UseSessionTimerProps)
 
     // Play phase-start cue for the first phase
     if (stateRef.current.audioEnabled) {
-      audioCues.playCue('phaseStart');
+      audioCues.playCue('phaseStart', { phaseDescription: sessionPhases[0]?.description });
     }
   }, [actions, sessionPhases, audioCues]);
 
@@ -186,38 +204,39 @@ const useSessionTimer = ({ audioCues, onSessionComplete }: UseSessionTimerProps)
 
   // ---- Phase progression handlers ----
 
+  const announceNextPhase = useCallback((): void => {
+    const nextPhase: Phase | undefined = sessionPhases[currentPhase + 1];
+    if (stateRef.current.audioEnabled) {
+      audioCues.playCue('phaseStart', { phaseDescription: nextPhase?.description });
+    }
+  }, [audioCues, sessionPhases, currentPhase]);
+
   const handleStretchConfirm = useCallback((): void => {
     actions.setStretchConfirmed(true);
     if (currentPhase < sessionPhases.length - 1) {
       actions.nextPhase();
-      if (stateRef.current.audioEnabled) {
-        audioCues.playCue('phaseStart');
-      }
+      announceNextPhase();
     } else {
       endSession();
     }
-  }, [actions, currentPhase, sessionPhases.length, endSession, audioCues]);
+  }, [actions, currentPhase, sessionPhases.length, endSession, announceNextPhase]);
 
   const handleMaxHoldComplete = useCallback((): void => {
     actions.setMaxHoldCompleted(true);
     if (currentPhase < sessionPhases.length - 1) {
       actions.nextPhase();
-      if (stateRef.current.audioEnabled) {
-        audioCues.playCue('phaseStart');
-      }
+      announceNextPhase();
     } else {
       endSession();
     }
-  }, [actions, currentPhase, sessionPhases.length, endSession, audioCues]);
+  }, [actions, currentPhase, sessionPhases.length, endSession, announceNextPhase]);
 
   const handleSkipPhase = useCallback((): void => {
     if (currentPhase < sessionPhases.length - 1) {
       actions.nextPhase();
-      if (stateRef.current.audioEnabled) {
-        audioCues.playCue('phaseStart');
-      }
+      announceNextPhase();
     }
-  }, [actions, currentPhase, sessionPhases.length, audioCues]);
+  }, [actions, currentPhase, sessionPhases.length, announceNextPhase]);
 
   const handlePhaseTimeAdjust = useCallback((newTime: number): void => {
     if (isSessionActive && sessionPhases[currentPhase]) {

@@ -6,6 +6,8 @@ import { DEFAULT_WEEKLY_SCHEDULE } from '../constants/defaults';
 import { Session, Profile, WeeklySchedule, CustomPhase, AudioPreferences } from '../types';
 import AudioSettings from './AudioSettings';
 import { DEFAULT_AUDIO_PREFERENCES } from '../hooks/useAudioCues';
+import { validateImportedTrainingData } from '../utils/profileValidation';
+import * as logger from '../utils/logger';
 
 const SettingsView: React.FC = () => {
   const { state, actions } = useAppContext();
@@ -83,45 +85,57 @@ const SettingsView: React.FC = () => {
 
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        try {
-          const data = JSON.parse(e.target?.result as string);
+    if (!file) return;
 
-          actions.setSessions(data.sessions || []);
-          actions.setCurrentMaxHold(data.currentMaxHold || null);
+    const reader = new FileReader();
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(e.target?.result as string);
+      } catch (err) {
+        logger.error('Error parsing imported data:', err);
+        actions.setNotification({
+          message: 'Failed to import data — file is not valid JSON.',
+          type: 'error',
+          duration: 4000,
+        });
+        return;
+      }
 
-          if (data.customSessions && Object.keys(data.customSessions).length > 0) {
-            actions.updateProfile(currentProfile, {
-              customSessions: {
-                ...profiles[currentProfile]?.customSessions,
-                ...data.customSessions
-              }
-            });
-            actions.setNotification({
-              message: `Imported ${Object.keys(data.customSessions).length} custom session(s) successfully!`,
-              type: 'success',
-              duration: 3000
-            });
-          }
+      const result = validateImportedTrainingData(parsed);
+      if (!result.ok || !result.value) {
+        actions.setNotification({
+          message: `Import rejected: ${result.error ?? 'unknown validation error'}`,
+          type: 'error',
+          duration: 5000,
+        });
+        return;
+      }
 
-          if (data.weeklySchedule) {
-            actions.setWeeklySchedule(data.weeklySchedule);
-            actions.updateProfile(currentProfile, { weeklySchedule: data.weeklySchedule });
-          }
+      const data = result.value;
+      if (data.sessions) actions.setSessions(data.sessions);
+      if (data.currentMaxHold !== undefined) actions.setCurrentMaxHold(data.currentMaxHold);
 
-        } catch (error) {
-          console.error('Error parsing imported data:', error);
-          actions.setNotification({
-            message: 'Failed to import data. Please check the file format.',
-            type: 'error',
-            duration: 3000
-          });
-        }
-      };
-      reader.readAsText(file);
-    }
+      if (data.customSessions && Object.keys(data.customSessions).length > 0) {
+        actions.updateProfile(currentProfile, {
+          customSessions: {
+            ...profiles[currentProfile]?.customSessions,
+            ...data.customSessions,
+          },
+        });
+        actions.setNotification({
+          message: `Imported ${Object.keys(data.customSessions).length} custom session(s) successfully!`,
+          type: 'success',
+          duration: 3000,
+        });
+      }
+
+      if (data.weeklySchedule) {
+        actions.setWeeklySchedule(data.weeklySchedule);
+        actions.updateProfile(currentProfile, { weeklySchedule: data.weeklySchedule });
+      }
+    };
+    reader.readAsText(file);
   };
 
   // ---- Audio preferences ----

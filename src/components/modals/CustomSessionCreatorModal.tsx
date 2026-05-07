@@ -3,6 +3,7 @@ import { X, Trash2 } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import PhaseCreator from '../PhaseCreator';
 import type { CustomPhase } from '../../types';
+import ModalShell from '../ModalShell';
 
 interface CustomSessionCreatorModalProps {
   onSave: () => void;
@@ -18,8 +19,6 @@ function CustomSessionCreatorModal({ onSave, onAddPhase, onCreatePhase, onRemove
     customSessionName, customSessionDescription, customSessionPhases
   } = state;
 
-  if (!showCustomSessionCreator) return null;
-
   const handleClose = (): void => {
     actions.hideModal('showCustomSessionCreator');
     actions.setCustomSessionName('');
@@ -29,8 +28,12 @@ function CustomSessionCreatorModal({ onSave, onAddPhase, onCreatePhase, onRemove
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="custom-session-modal-title">
-        <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <ModalShell
+        isOpen={showCustomSessionCreator}
+        onClose={handleClose}
+        labelledBy="custom-session-modal-title"
+        panelClassName="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
           <div className="flex justify-between items-center mb-4">
             <h3 id="custom-session-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">Create Custom Session Type</h3>
             <button
@@ -179,13 +182,15 @@ function CustomSessionCreatorModal({ onSave, onAddPhase, onCreatePhase, onRemove
               </button>
             </div>
           </div>
-        </div>
-      </div>
+      </ModalShell>
 
       {/* Phase Creator Modal */}
-      {showPhaseCreator && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="phase-creator-modal-title">
-          <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <ModalShell
+        isOpen={showPhaseCreator}
+        onClose={() => actions.hideModal('showPhaseCreator')}
+        labelledBy="phase-creator-modal-title"
+        panelClassName="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
             <div className="flex justify-between items-center mb-4">
               <h3 id="phase-creator-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
                 Add {currentPhaseType.charAt(0).toUpperCase() + currentPhaseType.slice(1)} Phase
@@ -205,9 +210,7 @@ function CustomSessionCreatorModal({ onSave, onAddPhase, onCreatePhase, onRemove
               onCancel={() => actions.hideModal('showPhaseCreator')}
               existingPhases={customSessionPhases}
             />
-          </div>
-        </div>
-      )}
+      </ModalShell>
     </>
   );
 }

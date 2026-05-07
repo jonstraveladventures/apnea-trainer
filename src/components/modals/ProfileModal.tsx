@@ -2,6 +2,13 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import type { Profile, AppNotification } from '../../types';
+import { validateImportedProfile } from '../../utils/profileValidation';
+import ModalShell from '../ModalShell';
+
+interface ProfileFileAPI {
+  loadProfileFromFile: () => Promise<{ success: boolean; data?: unknown; canceled?: boolean }>;
+  saveProfileAs: (profileData: Profile) => Promise<{ success: boolean; filePath?: string; canceled?: boolean }>;
+}
 
 interface ProfileModalProps {
   onSwitchProfile: (id: string) => void;
@@ -17,11 +24,12 @@ function ProfileModal({ onSwitchProfile, onCreateProfile, onDeleteProfile }: Pro
   const setCurrentProfile = actions.setCurrentProfile;
   const setNotification = (v: AppNotification | null): void => v === null ? actions.clearNotification() : actions.setNotification(v);
 
-  if (!showProfileModal) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
-      <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-md w-full mx-4">
+    <ModalShell
+      isOpen={showProfileModal}
+      onClose={() => setShowProfileModal(false)}
+      labelledBy="profile-modal-title"
+    >
         <div className="flex justify-between items-center mb-4">
           <h3 id="profile-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">Profile Management</h3>
           <button
@@ -112,33 +120,52 @@ function ProfileModal({ onSwitchProfile, onCreateProfile, onDeleteProfile }: Pro
             <div className="flex gap-2">
               <button
                 onClick={async () => {
+                  const api = (window as unknown as { electronAPI?: ProfileFileAPI }).electronAPI;
+                  if (!api?.loadProfileFromFile) {
+                    setNotification({
+                      message: 'Profile import is only available in the desktop app.',
+                      type: 'error',
+                      duration: 3000,
+                    });
+                    return;
+                  }
                   try {
-                    const result = await (window as any).electronAPI.loadProfileFromFile();
-                    if (result.success && result.data) {
-                      const profileData = result.data;
-                      const profileId = `imported_${Date.now()}`;
+                    const result = await api.loadProfileFromFile();
+                    if (!result.success || !result.data) return;
 
-                      const newProfile = {
-                        ...profileData,
-                        id: profileId,
-                        created: profileData.created || new Date().toISOString(),
-                        lastUpdated: new Date().toISOString()
-                      };
-
-                      actions.createProfile(profileId, newProfile);
-                      setCurrentProfile(profileId);
-                      const customSessionCount = profileData.customSessions ? Object.keys(profileData.customSessions).length : 0;
+                    const validation = validateImportedProfile(result.data);
+                    if (!validation.ok || !validation.value) {
                       setNotification({
-                        message: `Profile "${profileData.name}" imported successfully!${customSessionCount > 0 ? ` (${customSessionCount} custom session(s) included)` : ''}`,
-                        type: 'success',
-                        duration: 3000
+                        message: `Import rejected: ${validation.error ?? 'invalid profile file'}`,
+                        type: 'error',
+                        duration: 5000,
                       });
+                      return;
                     }
-                  } catch (error) {
+
+                    const profileData = validation.value;
+                    const profileId = `imported_${Date.now()}`;
+                    const newProfile: Profile = {
+                      ...profileData,
+                      created: profileData.created || new Date().toISOString(),
+                      lastUpdated: new Date().toISOString(),
+                    };
+
+                    actions.createProfile(profileId, newProfile);
+                    setCurrentProfile(profileId);
+                    const customSessionCount = profileData.customSessions
+                      ? Object.keys(profileData.customSessions).length
+                      : 0;
+                    setNotification({
+                      message: `Profile "${profileData.name}" imported successfully!${customSessionCount > 0 ? ` (${customSessionCount} custom session(s) included)` : ''}`,
+                      type: 'success',
+                      duration: 3000,
+                    });
+                  } catch (_err) {
                     setNotification({
                       message: 'Failed to import profile',
                       type: 'error',
-                      duration: 3000
+                      duration: 3000,
                     });
                   }
                 }}
@@ -148,24 +175,34 @@ function ProfileModal({ onSwitchProfile, onCreateProfile, onDeleteProfile }: Pro
               </button>
               <button
                 onClick={async () => {
+                  const api = (window as unknown as { electronAPI?: ProfileFileAPI }).electronAPI;
+                  const currentProfileData = profiles[currentProfile];
+                  if (!api?.saveProfileAs) {
+                    setNotification({
+                      message: 'Profile export is only available in the desktop app.',
+                      type: 'error',
+                      duration: 3000,
+                    });
+                    return;
+                  }
+                  if (!currentProfileData) return;
                   try {
-                    const currentProfileData = profiles[currentProfile];
-                    if (currentProfileData) {
-                      const result = await (window as any).electronAPI.saveProfileAs(currentProfileData);
-                      if (result.success) {
-                        const customSessionCount = currentProfileData.customSessions ? Object.keys(currentProfileData.customSessions).length : 0;
-                        setNotification({
-                          message: `Profile "${currentProfileData.name}" exported successfully!${customSessionCount > 0 ? ` (${customSessionCount} custom session(s) included)` : ''}`,
-                          type: 'success',
-                          duration: 3000
-                        });
-                      }
+                    const result = await api.saveProfileAs(currentProfileData);
+                    if (result.success) {
+                      const customSessionCount = currentProfileData.customSessions
+                        ? Object.keys(currentProfileData.customSessions).length
+                        : 0;
+                      setNotification({
+                        message: `Profile "${currentProfileData.name}" exported successfully!${customSessionCount > 0 ? ` (${customSessionCount} custom session(s) included)` : ''}`,
+                        type: 'success',
+                        duration: 3000,
+                      });
                     }
-                  } catch (error) {
+                  } catch (_err) {
                     setNotification({
                       message: 'Failed to export profile',
                       type: 'error',
-                      duration: 3000
+                      duration: 3000,
                     });
                   }
                 }}
@@ -176,8 +213,7 @@ function ProfileModal({ onSwitchProfile, onCreateProfile, onDeleteProfile }: Pro
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
 

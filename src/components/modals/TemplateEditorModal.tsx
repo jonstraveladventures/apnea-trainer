@@ -4,6 +4,7 @@ import { useAppContext } from '../../context/AppContext';
 import { useTimerContext } from '../../context/TimerContext';
 import { SESSION_TEMPLATES } from '../../config/sessionTemplates';
 import { SessionTemplate } from '../../types/index';
+import ModalShell from '../ModalShell';
 
 function TemplateEditorModal(): React.ReactElement | null {
   const { state, actions } = useAppContext();
@@ -17,8 +18,6 @@ function TemplateEditorModal(): React.ReactElement | null {
       setEditedTemplate({ ...SESSION_TEMPLATES[editingSessionType] } || {});
     }
   }, [editingSessionType]);
-
-  if (!showTemplateEditor) return null;
 
   const handleClose = (): void => {
     actions.hideModal('showTemplateEditor');
@@ -43,11 +42,13 @@ function TemplateEditorModal(): React.ReactElement | null {
     setEditedTemplate(prev => ({ ...prev, [field]: value }));
   };
 
-  if (!editingSessionType) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="template-editor-modal-title">
-      <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <ModalShell
+      isOpen={showTemplateEditor && !!editingSessionType}
+      onClose={handleClose}
+      labelledBy="template-editor-modal-title"
+      panelClassName="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+    >
         <div className="flex justify-between items-center mb-4">
           <h3 id="template-editor-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">Customize {editingSessionType}</h3>
           <button
@@ -602,8 +603,7 @@ function TemplateEditorModal(): React.ReactElement | null {
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
 

@@ -1,12 +1,15 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { AudioCueType, AudioPreferences, AudioSound } from '../types';
+import * as logger from '../utils/logger';
+import { useSpeech } from './useSpeech';
 
-/** Default audio preferences — countdown enabled (mp3 voice), others enabled with good defaults */
+/** Default audio preferences — voice cues for the spoken bits, chimes for phase boundaries. */
 export const DEFAULT_AUDIO_PREFERENCES: AudioPreferences = {
-  countdown: { enabled: true, sound: 'singing-bowl' },
-  phaseStart: { enabled: true, sound: 'double-chime-up' },
+  countdown: { enabled: true, sound: 'voice' },
+  phaseStart: { enabled: true, sound: 'voice' },
   phaseEnd: { enabled: true, sound: 'singing-bowl' },
-  sessionComplete: { enabled: true, sound: 'completion-fanfare' },
+  sessionComplete: { enabled: true, sound: 'voice' },
+  minuteMark: { enabled: true, sound: 'voice' },
 };
 
 /** Human-readable labels for each sound */
@@ -17,13 +20,31 @@ export const SOUND_LABELS: Record<AudioSound, string> = {
   'gentle-bell': 'Gentle Bell',
   'completion-fanfare': 'Completion Fanfare',
   'soft-pulse': 'Soft Pulse',
+  'voice': 'Voice (text-to-speech)',
   'none': 'None',
 };
 
-export interface UseAudioCuesReturn {
-  playCue: (cueType: AudioCueType) => void;
-  playSound: (sound: AudioSound) => void;
+/** Optional per-cue context, used to build voice text. */
+export interface CueContext {
+  /** Phase description, e.g. "Hold 1: 60s" or "Diaphragmatic Breathing". */
+  phaseDescription?: string;
+  /** Used by minuteMark — number of full minutes elapsed in the current phase. */
+  minutes?: number;
 }
+
+export interface UseAudioCuesReturn {
+  playCue: (cueType: AudioCueType, context?: CueContext) => void;
+  /** `volume` is 0-1; defaults to 1 (full). */
+  playSound: (sound: AudioSound, volume?: number) => void;
+  /** Speak arbitrary text using the user's chosen voice. */
+  speak: (text: string, volume?: number) => void;
+}
+
+/** Clamp + default audio volume into the 0-1 range. */
+const normalizeVolume = (v: number | undefined): number => {
+  if (v === undefined || Number.isNaN(v)) return 1;
+  return Math.max(0, Math.min(1, v));
+};
 
 // ---- Synthesis helpers ----
 
@@ -69,8 +90,7 @@ function playOsc(
  * Singing bowl — layered harmonics with long natural decay.
  * Mimics a Tibetan singing bowl struck once.
  */
-function playSingingBowl(ctx: AudioContext) {
-  const dest = ctx.destination;
+function playSingingBowl(ctx: AudioContext, dest: AudioNode) {
   const now = ctx.currentTime;
 
   // Fundamental + harmonics at decreasing volumes
@@ -105,8 +125,7 @@ function playSingingBowl(ctx: AudioContext) {
  * Double chime — two notes played in sequence.
  * Ascending (up) for phase start, descending (down) for phase end.
  */
-function playDoubleChime(ctx: AudioContext, ascending: boolean) {
-  const dest = ctx.destination;
+function playDoubleChime(ctx: AudioContext, dest: AudioNode, ascending: boolean) {
   const notes = ascending
     ? [523.25, 659.25]  // C5 → E5 (major third up — hopeful, beginning)
     : [659.25, 523.25]; // E5 → C5 (major third down — resolved, complete)
@@ -151,8 +170,7 @@ function playDoubleChime(ctx: AudioContext, ascending: boolean) {
  * Gentle bell — single bell-like tone with a soft attack and warm decay.
  * Good for subtle notifications.
  */
-function playGentleBell(ctx: AudioContext) {
-  const dest = ctx.destination;
+function playGentleBell(ctx: AudioContext, dest: AudioNode) {
   const now = ctx.currentTime;
 
   // Bell fundamental
@@ -186,8 +204,7 @@ function playGentleBell(ctx: AudioContext) {
  * Completion fanfare — ascending 4-note arpeggio (C-E-G-C).
  * Celebratory but calm, appropriate for finishing a session.
  */
-function playCompletionFanfare(ctx: AudioContext) {
-  const dest = ctx.destination;
+function playCompletionFanfare(ctx: AudioContext, dest: AudioNode) {
   const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
   const spacing = 0.15;
 
@@ -233,8 +250,7 @@ function playCompletionFanfare(ctx: AudioContext) {
  * Soft pulse — a low, gentle throb. Good for subtle awareness cues.
  * Uses a filtered low-frequency tone with slow attack.
  */
-function playSoftPulse(ctx: AudioContext) {
-  const dest = ctx.destination;
+function playSoftPulse(ctx: AudioContext, dest: AudioNode) {
   const now = ctx.currentTime;
 
   const osc = ctx.createOscillator();
@@ -280,6 +296,7 @@ function playSoftPulse(ctx: AudioContext) {
  */
 const useAudioCues = (preferences?: AudioPreferences): UseAudioCuesReturn => {
   const prefs = preferences ?? DEFAULT_AUDIO_PREFERENCES;
+  const { speak: speakRaw } = useSpeech();
 
   // Lazy-init AudioContext (browsers require a user gesture first)
   const ctxRef = useRef<AudioContext | null>(null);
@@ -295,64 +312,130 @@ const useAudioCues = (preferences?: AudioPreferences): UseAudioCuesReturn => {
     return ctxRef.current;
   }, []);
 
-  // Pre-load the countdown mp3
+  // Pre-load the countdown mp3 (kept as a non-voice fallback option).
   useEffect(() => {
     countdownAudioRef.current = new Audio('/audio/countdown-5-4-3-2-1.mp3');
   }, []);
 
-  /** Play a specific AudioSound */
+  /** Speak arbitrary text using the user's chosen voice. */
+  const speak = useCallback(
+    (text: string, volume?: number) => {
+      speakRaw(text, { voiceName: prefs.voiceName, volume: normalizeVolume(volume) });
+    },
+    [prefs.voiceName, speakRaw],
+  );
+
+  /** Play a specific AudioSound, optionally at a reduced volume (0-1). */
   const playSound = useCallback(
-    (sound: AudioSound) => {
+    (sound: AudioSound, volume?: number) => {
+      if (sound === 'none') return;
       const ctx = getCtx();
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(normalizeVolume(volume), ctx.currentTime);
+      masterGain.connect(ctx.destination);
+
       switch (sound) {
         case 'singing-bowl':
-          playSingingBowl(ctx);
+          playSingingBowl(ctx, masterGain);
           break;
         case 'double-chime-up':
-          playDoubleChime(ctx, true);
+          playDoubleChime(ctx, masterGain, true);
           break;
         case 'double-chime-down':
-          playDoubleChime(ctx, false);
+          playDoubleChime(ctx, masterGain, false);
           break;
         case 'gentle-bell':
-          playGentleBell(ctx);
+          playGentleBell(ctx, masterGain);
           break;
         case 'completion-fanfare':
-          playCompletionFanfare(ctx);
+          playCompletionFanfare(ctx, masterGain);
           break;
         case 'soft-pulse':
-          playSoftPulse(ctx);
-          break;
-        case 'none':
-        default:
+          playSoftPulse(ctx, masterGain);
           break;
       }
     },
     [getCtx],
   );
 
-  /** Play the cue for a given cue type, respecting user preferences */
+  /**
+   * Play the cue for a given cue type, respecting user preferences.
+   * Pass `context` for cues whose voice text depends on the current phase
+   * (phaseStart / phaseEnd / minuteMark).
+   */
   const playCue = useCallback(
-    (cueType: AudioCueType) => {
+    (cueType: AudioCueType, context: CueContext = {}) => {
       const config = prefs[cueType];
       if (!config || !config.enabled) return;
 
-      // Special case: countdown cue uses the mp3 voice countdown
-      // (regardless of sound setting — the voice countdown is always best here)
-      if (cueType === 'countdown') {
+      const volume = normalizeVolume(config.volume);
+
+      // Special case: spoken countdown. The trigger fires at phaseTime ===
+      // duration - 6, so we have ~6 seconds to land "five … one" on the
+      // beat. Schedule each digit individually so the engine's prosody
+      // can't drift the timing. A reduced rate stretches each word so it
+      // fills most of its 1-second slot (~0.7s of audio).
+      // Countdown + voice = bundled mp3. Web Speech API can't reliably
+      // deliver five evenly-paced words in 5 seconds (huge inter-utterance
+      // latency varies by voice). The mp3 is a real recorded voice and is
+      // precisely 5 seconds long, so we route voice-mode countdown to it.
+      if (cueType === 'countdown' && config.sound === 'voice') {
         if (countdownAudioRef.current) {
           countdownAudioRef.current.currentTime = 0;
-          countdownAudioRef.current.play().catch((e) => console.log('Audio play failed:', e));
+          countdownAudioRef.current.volume = volume;
+          countdownAudioRef.current.play().catch((e) => logger.log('Audio play failed:', e));
         }
         return;
       }
 
-      playSound(config.sound);
+      // Other voice-mode cues route to SpeechSynthesis with cue-appropriate text.
+      if (config.sound === 'voice') {
+        const text = buildCueText(cueType, context);
+        if (text) speak(text, volume);
+        return;
+      }
+
+      // Other cues fall through to the synth chimes.
+      playSound(config.sound, volume);
     },
-    [prefs, playSound],
+    [prefs, playSound, speak],
   );
 
-  return { playCue, playSound };
+  return { playCue, playSound, speak };
 };
+
+/**
+ * Build the spoken text for a voice cue. Returns an empty string for cues
+ * where the context is missing the data we'd need to say something useful.
+ */
+function buildCueText(cueType: AudioCueType, ctx: CueContext): string {
+  const phase = (ctx.phaseDescription || '').trim();
+  switch (cueType) {
+    case 'countdown':
+      return 'Five. Four. Three. Two. One.';
+    case 'phaseStart':
+      return phase ? `Begin ${phase}` : 'Begin';
+    case 'phaseEnd':
+      return phase ? `${phase} complete` : 'Complete';
+    case 'sessionComplete':
+      return 'Session complete. Well done.';
+    case 'minuteMark':
+      if (typeof ctx.minutes !== 'number' || ctx.minutes < 1) return '';
+      return ctx.minutes === 1 ? 'One minute' : `${numberToWords(ctx.minutes)} minutes`;
+    default:
+      return '';
+  }
+}
+
+/** Spell small integers as words (more natural-sounding than digits to TTS). */
+function numberToWords(n: number): string {
+  const words = [
+    'zero', 'one', 'two', 'three', 'four', 'five',
+    'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
+    'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty',
+  ];
+  return words[n] ?? String(n);
+}
 
 export default useAudioCues;

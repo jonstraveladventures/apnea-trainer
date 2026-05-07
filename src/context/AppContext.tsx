@@ -12,6 +12,7 @@ import {
   AudioPreferences
 } from '../types';
 import { DEFAULT_AUDIO_PREFERENCES } from '../hooks/useAudioCues';
+import * as logger from '../utils/logger';
 
 // ---- Electron API type declaration ----
 declare global {
@@ -298,8 +299,8 @@ const persistSave = async (data: PersistedData): Promise<void> => {
     } else {
       localStorage.setItem('apneaTrainerData', JSON.stringify(data));
     }
-  } catch (error) {
-    console.error('Error saving data:', error);
+  } catch (err) {
+    logger.error('Error saving data:', err);
   }
 };
 
@@ -315,8 +316,8 @@ const persistLoad = async (): Promise<PersistedData | null> => {
       const saved = localStorage.getItem('apneaTrainerData');
       return saved ? JSON.parse(saved) : null;
     }
-  } catch (error) {
-    console.error('Error loading data:', error);
+  } catch (err) {
+    logger.error('Error loading data:', err);
     return null;
   }
 };

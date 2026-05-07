@@ -9,7 +9,7 @@ interface AppHeaderProps {
 }
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+  `flex items-center justify-center sm:justify-start gap-2 px-2 sm:px-3 py-2 rounded-lg transition-colors flex-1 sm:flex-none text-sm whitespace-nowrap ${
     isActive
       ? 'bg-ocean-600 text-white'
       : 'text-gray-500 dark:text-deep-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-deep-700'
@@ -37,17 +37,17 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onSave }) => {
   return (
     <>
       {/* Header */}
-      <header className="bg-white dark:bg-deep-800 border-b border-gray-200 dark:border-deep-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-ocean-600 rounded-lg flex items-center justify-center">
+      <header className="bg-white dark:bg-deep-800 border-b border-gray-200 dark:border-deep-700 px-3 sm:px-6 py-3 sm:py-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 bg-ocean-600 rounded-lg flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-sm">🐬</span>
             </div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Apnea Trainer</h1>
+            <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">Apnea Trainer</h1>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-500 dark:text-deep-400">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+            <div className="hidden md:block text-sm text-gray-500 dark:text-deep-400">
               {completedSessions} sessions completed
             </div>
 
@@ -73,20 +73,22 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onSave }) => {
             <button
               onClick={onSave}
               className="btn-secondary flex items-center gap-2 text-sm"
+              aria-label="Save data"
             >
               <Save className="w-4 h-4" />
-              Save
+              <span className="hidden sm:inline">Save</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Navigation */}
-      <nav className="bg-white dark:bg-deep-800 border-b border-gray-200 dark:border-deep-700 px-6 py-2" role="navigation" aria-label="Main navigation">
-        <div className="flex items-center gap-6">
+      <nav className="bg-white dark:bg-deep-800 border-b border-gray-200 dark:border-deep-700 px-2 sm:px-6 py-2" role="navigation" aria-label="Main navigation">
+        <div className="flex items-center gap-1 sm:gap-6">
           <NavLink to="/weekplan" className={navLinkClass}>
             <Calendar className="w-4 h-4" />
-            Week Plan
+            <span className="hidden sm:inline">Week Plan</span>
+            <span className="sm:hidden">Plan</span>
           </NavLink>
 
           <NavLink to="/timer" className={navLinkClass}>
@@ -101,7 +103,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onSave }) => {
 
           <NavLink to="/settings" className={navLinkClass}>
             <Settings className="w-4 h-4" />
-            Settings
+            <span className="hidden sm:inline">Settings</span>
+            <span className="sm:hidden">More</span>
           </NavLink>
         </div>
       </nav>

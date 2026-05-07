@@ -253,7 +253,13 @@ export type ExerciseInstructionsMap = Record<string, ExerciseInstruction>;
 
 // ---- Audio cue types ----
 
-export type AudioCueType = 'countdown' | 'phaseStart' | 'phaseEnd' | 'sessionComplete';
+export type AudioCueType =
+  | 'countdown'
+  | 'phaseStart'
+  | 'phaseEnd'
+  | 'sessionComplete'
+  /** Spoken every full minute into a phase ("one minute", "two minutes", ...). */
+  | 'minuteMark';
 export type AudioSound =
   | 'singing-bowl'
   | 'double-chime-up'
@@ -261,11 +267,15 @@ export type AudioSound =
   | 'gentle-bell'
   | 'completion-fanfare'
   | 'soft-pulse'
+  /** Use the system text-to-speech engine. Cue text is set per cue type. */
+  | 'voice'
   | 'none';
 
 export interface AudioCueConfig {
   enabled: boolean;
   sound: AudioSound;
+  /** 0.0 (silent) - 1.0 (default). Optional for backwards-compat with older saved profiles. */
+  volume?: number;
 }
 
 export interface AudioPreferences {
@@ -273,4 +283,11 @@ export interface AudioPreferences {
   phaseStart: AudioCueConfig;       // when phase begins
   phaseEnd: AudioCueConfig;         // when phase completes
   sessionComplete: AudioCueConfig;  // when session finishes
+  /** Spoken every full minute into a phase. Optional for backwards-compat. */
+  minuteMark?: AudioCueConfig;
+  /**
+   * Name of a SpeechSynthesisVoice to use for any cue whose `sound === 'voice'`.
+   * If undefined, the browser's default voice is used.
+   */
+  voiceName?: string;
 }

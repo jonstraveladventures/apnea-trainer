@@ -42,12 +42,14 @@ const useSessionSetup = ({ todaySession, currentMaxHold, customSessions, parseSe
     }
   }, [selectedSessionType, currentMaxHold]); // eslint-disable-line
 
-  // Show max hold modal if no max hold is set
+  // Show max hold modal only if the user has no max hold on file at all.
+  // (Don't conflate with `todaySession.actualMaxHold`, which is the *result*
+  // recorded after a session — that stays null until the session completes.)
   useEffect(() => {
-    if (!todaySession?.actualMaxHold) {
+    if (!currentMaxHold) {
       onShowMaxHoldModal();
     }
-  }, [todaySession]); // eslint-disable-line
+  }, [currentMaxHold]); // eslint-disable-line
 };
 
 export default useSessionSetup;

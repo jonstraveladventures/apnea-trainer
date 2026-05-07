@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Save, X } from 'lucide-react';
 import { formatTime } from '../../utils/trainingLogic';
+import ModalShell from '../ModalShell';
 
 interface CustomSessionTypeModalProps {
   isOpen: boolean;
@@ -24,8 +25,6 @@ const CustomSessionTypeModal: React.FC<CustomSessionTypeModalProps> = ({ isOpen,
     cooldownDuration: 180
   });
   const [customSessionBase, setCustomSessionBase] = useState<string>('');
-
-  if (!isOpen) return null;
 
   const calculateSessionDuration = (): number => {
     const warmupTime = (customSessionConfig.warmupHolds || 0) *
@@ -68,13 +67,18 @@ const CustomSessionTypeModal: React.FC<CustomSessionTypeModalProps> = ({ isOpen,
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true">
-      <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      labelledBy="custom-session-type-modal-title"
+      panelClassName="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+    >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create Custom Session Type</h3>
+          <h3 id="custom-session-type-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">Create Custom Session Type</h3>
           <button
             onClick={onClose}
             className="text-gray-400 dark:text-deep-400 hover:text-gray-600 dark:hover:text-white"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -424,8 +428,7 @@ const CustomSessionTypeModal: React.FC<CustomSessionTypeModalProps> = ({ isOpen,
             Cancel
           </button>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 };
 

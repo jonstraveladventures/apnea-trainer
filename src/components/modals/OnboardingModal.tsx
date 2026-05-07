@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, AlertTriangle, Clock, Brain, Wind, Waves, Dumbbell, Target } from 'lucide-react';
+import ModalShell from '../ModalShell';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -8,13 +9,13 @@ interface OnboardingModalProps {
 
 const SESSION_TYPES = [
   {
-    id: 'Comfortable CO₂',
+    id: 'Comfortable CO₂ Training',
     label: 'Comfortable CO\u2082',
     icon: Wind,
     description: 'Gentle breath-hold intervals with comfortable rest periods',
   },
   {
-    id: 'CO₂ Tolerance',
+    id: 'Traditional CO₂ Tables',
     label: 'Traditional CO\u2082',
     icon: Waves,
     description: 'Progressive CO\u2082 table with decreasing rest times',
@@ -56,8 +57,6 @@ function OnboardingModal({ isOpen, onComplete }: OnboardingModalProps): React.Re
   const [maxHold, setMaxHold] = useState('');
   const [selectedFocus, setSelectedFocus] = useState('');
 
-  if (!isOpen) return null;
-
   const totalSteps = 4;
 
   const handleComplete = () => {
@@ -67,9 +66,14 @@ function OnboardingModal({ isOpen, onComplete }: OnboardingModalProps): React.Re
 
   const canProceedFromStep3 = maxHold !== '' && parseInt(maxHold) >= 30;
 
+  // Onboarding has no close action — wizard must be completed.
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-deep-800 rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
+    <ModalShell
+      isOpen={isOpen}
+      labelledBy="onboarding-title"
+      closeOnBackdrop={false}
+      panelClassName="bg-white dark:bg-deep-800 rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden"
+    >
         {/* Content area */}
         <div className="p-6 sm:p-8">
           {/* Step 1: Welcome */}
@@ -79,7 +83,7 @@ function OnboardingModal({ isOpen, onComplete }: OnboardingModalProps): React.Re
                 🐬
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h2 id="onboarding-title" className="text-2xl font-bold text-gray-900 dark:text-white">
                   Welcome to Apnea Trainer
                 </h2>
                 <p className="mt-2 text-gray-500 dark:text-deep-400">
@@ -337,8 +341,7 @@ function OnboardingModal({ isOpen, onComplete }: OnboardingModalProps): React.Re
             />
           ))}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
 

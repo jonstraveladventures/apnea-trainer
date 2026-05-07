@@ -17,6 +17,7 @@ import useSessionSetup from '../hooks/useSessionSetup';
 import { useAppContext } from '../context/AppContext';
 import { DEFAULT_AUDIO_PREFERENCES } from '../hooks/useAudioCues';
 import { Session, Phase, CustomSessions, SessionTemplates, AudioPreferences } from '../types';
+import ModalShell from './ModalShell';
 
 interface TimerProps {
   onSessionComplete: (sessionTime: number) => void;
@@ -364,14 +365,20 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
         </div>
 
         {/* Exercise Instructions Modal */}
-        {showInstructions && currentInstruction && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <ModalShell
+          isOpen={!!(showInstructions && currentInstruction)}
+          onClose={() => timerActions.setShowInstructions(false)}
+          labelledBy="timer-instructions-title"
+          panelClassName="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        >
+          {currentInstruction && (
+            <>
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{currentInstruction.title}</h3>
+                <h3 id="timer-instructions-title" className="text-xl font-semibold text-gray-900 dark:text-white">{currentInstruction.title}</h3>
                 <button
                   onClick={() => timerActions.setShowInstructions(false)}
                   className="text-gray-400 dark:text-deep-400 hover:text-gray-600 dark:hover:text-white"
+                  aria-label="Close"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -392,9 +399,9 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
                   </ol>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </ModalShell>
       </div>
     </div>
   );

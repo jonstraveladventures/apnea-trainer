@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import * as logger from '../utils/logger';
 
 /**
  * Simple audio playback hook.
@@ -16,7 +17,7 @@ const useAudio = (audioFile: string): { play: () => void } => {
   const play = (): void => {
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+      audioRef.current.play().catch(e => logger.log('Audio play failed:', e));
     }
   };
 

@@ -1,3 +1,5 @@
+import * as logger from './utils/logger';
+
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
   window.location.hostname === '[::1]' ||
@@ -35,16 +37,16 @@ function registerValidSW(swUrl: string): void {
         installingWorker.onstatechange = () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
-              console.log('New content available; please refresh.');
+              logger.log('New content available; please refresh.');
             } else {
-              console.log('Content is cached for offline use.');
+              logger.log('Content is cached for offline use.');
             }
           }
         };
       };
     })
     .catch((error) => {
-      console.error('Error during service worker registration:', error);
+      logger.error('Error during service worker registration:', error);
     });
 }
 
@@ -58,7 +60,7 @@ function checkValidServiceWorker(swUrl: string): void {
       }
     })
     .catch(() => {
-      console.log('No internet connection. App is running in offline mode.');
+      logger.log('No internet connection. App is running in offline mode.');
     });
 }
 
