@@ -64,31 +64,45 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 - **Profile-Specific Data**: Each profile maintains its own training history and custom sessions
 - **Easy Profile Switching**: Quickly switch between profiles with a dropdown menu
 
+### 🔊 Audio Cues
+- **Spoken Voice Cues**: System text-to-speech announces phase starts, ends, minute marks, and session completion ("Begin diaphragmatic breathing", "One minute", "Hold complete", "Session complete")
+- **Voice Picker**: Choose any installed voice on your system — macOS Siri voices sound especially natural
+- **Precision Countdown**: Five-second voice countdown before each phase ends, using a precisely-timed recorded mp3
+- **Synthesised Chimes**: Singing bowl, rising/falling chimes, gentle bell, and completion fanfare available as alternatives — all generated in-browser, no downloads
+- **Per-Cue Volume**: Independent volume slider for every cue point
+
+### 📱 Cross-Platform & PWA
+- **Native Desktop App**: macOS, Windows, and Linux builds via Electron
+- **Progressive Web App**: Install in any modern browser; works offline once loaded
+- **Dark/Light Theme**: Toggle in the header, persisted per device
+- **Mobile-Responsive**: Header and navigation adapt for small screens
+
 ## 📸 Screenshots
 
-### Main Dashboard - 7-Day Training Plan
+### Main Dashboard – 7-Day Training Plan
 <img src="at1.png" alt="Main Dashboard" width="600" />
 
-*The main dashboard showing your dynamic 7-day training plan. Each day displays the scheduled session type with completion status, session details, and quick access to start training. The plan automatically updates daily to show the next 7 days of your ongoing training program.*
+*The main dashboard showing your dynamic 7-day training plan. Today's card highlights with a "Start Session" button that takes you straight to the timer; each other card lets you review session details or mark complete. The plan automatically rolls forward each day.*
 
-### Timer Interface - Session Selection & Active Training
+### Timer Interface – Active Session
 <img src="at2.png" alt="Timer Interface" width="600" />
 
-*The timer interface with session type selection dropdown and active training display. You can choose any session type (including custom sessions) from the dropdown, and the interface provides real-time guidance, phase instructions, and progress tracking during your session.*
+*The timer view, here mid-session on the Stretch Confirmation phase. Phase progress, audio toggle, and step-by-step instructions for the current exercise sit side-by-side. Once running, the timer announces each phase by name, reads "one minute", "two minutes", … as the phase progresses, and counts down the last five seconds.*
 
-### Settings & Profile Management
-<img src="at3.png" alt="Settings Interface" width="600" />
+### Settings – Profile, Schedule & Audio Cues
+<img src="at3.png" alt="Settings: profile, schedule, and audio cues" width="600" />
 
-*The comprehensive settings interface showing profile management, session templates, custom sessions, and data management options. Custom sessions are organized under the Session Templates section for easy access.*
+*The Settings page — profile management, weekly schedule editor, and the Audio Cues section with a global voice picker plus per-cue toggles, sound choice, and volume sliders.*
 
-### Custom Session Creation & Progress Tracking
-<img src="at4.png" alt="Custom Session Creation" width="600" />
+### Settings – Session Templates & Custom Sessions
+<img src="at4.png" alt="Settings: session templates" width="600" />
 
-*The custom session creator interface where you can build personalized training sessions. Choose from different phase types (hold, breathing, mental, custom) and configure parameters with smart progressive logic that only references the same type of phases.*
+*Lower on the Settings page: the full session-template library where you can fine-tune parameters for every built-in session type, plus a Custom Sessions panel for creating your own from scratch.*
 
+### Progress Tracking
 <img src="at5.png" alt="Progress Tracking" width="600" />
 
-*Progress tracking and session history with completion statistics, performance insights, and visual charts showing your training progression over time.*
+*Progress dashboard with completion rate, best max-hold, day streak, max-hold trend chart, weekly volume bars, and personal records. Export to CSV or PDF for offline review.*
 
 ## 🚀 Installation
 
@@ -357,58 +371,90 @@ npm run dist-all
 ### Project Structure
 ```
 apnea-trainer/
-├── public/                 # Static files
-│   ├── electron.js        # Electron main process
-│   ├── preload.js         # Electron preload script
-│   └── index.html         # Main HTML file
-├── src/                   # React source code
-│   ├── components/        # React components
-│   │   ├── Timer.js       # Main timer component (refactored)
-│   │   ├── SessionSelector.js # Session type selection
-│   │   ├── SessionPreview.js # Session phase preview
-│   │   ├── PhaseDisplay.js # Active phase display
-│   │   ├── ControlButtons.js # Session control buttons
-│   │   ├── SessionSummary.js # Session completion summary
-│   │   ├── WeekPlan.js    # 7-day plan display
-│   │   ├── ProgressChart.js # Progress tracking
-│   │   ├── SessionCard.js # Individual session cards
-│   │   └── MaxHoldModal.js # Max hold input modal
-│   ├── config/            # Configuration files
-│   │   └── sessionTemplates.js # Centralized session templates
-│   ├── utils/             # Utility functions
-│   │   ├── trainingLogic.js # Training session logic
-│   │   └── sessionParsers.js # Modular session parsing
-│   ├── App.js             # Main React component
-│   └── index.js           # React entry point
-├── package.json           # Dependencies and scripts
-└── README.md             # This file
+├── public/                          # Static files
+│   ├── electron.js                  # Electron main process
+│   ├── preload.js                   # Preload script (contextBridge IPC)
+│   ├── service-worker.js            # PWA offline cache
+│   ├── manifest.json                # PWA manifest
+│   ├── audio/                       # Bundled mp3 cues (countdown voice)
+│   └── index.html                   # Main HTML
+├── src/                             # React + TypeScript source
+│   ├── components/
+│   │   ├── Timer.tsx                # Main timer view
+│   │   ├── PhaseDisplay.tsx         # Active phase + progress bar
+│   │   ├── ControlButtons.tsx       # Play / pause / skip / reset
+│   │   ├── SessionSelector.tsx      # Session type dropdown
+│   │   ├── SessionPreview.tsx       # Phase list preview
+│   │   ├── SessionSummary.tsx       # Post-session summary
+│   │   ├── WeekPlan.tsx             # 7-day dashboard
+│   │   ├── ProgressChart.tsx        # Analytics dashboard
+│   │   ├── SettingsView.tsx         # Settings page
+│   │   ├── AudioSettings.tsx        # Voice picker + per-cue config
+│   │   ├── ModalShell.tsx           # A11y modal wrapper (focus trap, ESC)
+│   │   ├── ErrorBoundary.tsx        # Route-level error fallback
+│   │   ├── progress/                # Progress sub-components (charts, records)
+│   │   └── modals/                  # Profile, Onboarding, Template Editor, ...
+│   ├── context/
+│   │   ├── AppContext.tsx           # Profiles, sessions, schedule, persistence
+│   │   ├── TimerContext.tsx         # Timer state machine
+│   │   └── ThemeContext.tsx         # Dark/light theme
+│   ├── hooks/
+│   │   ├── useSessionTimer.ts       # 1-second interval + phase progression
+│   │   ├── useSessionSetup.ts       # Initialise phases from today's session
+│   │   ├── useAudioCues.ts          # Web Audio synth + cue routing
+│   │   ├── useSpeech.ts             # SpeechSynthesis voice helper
+│   │   └── useFocusTrap.ts          # Modal focus management
+│   ├── utils/
+│   │   ├── trainingLogic.ts         # Schedule generation, formatting
+│   │   ├── sessionParsers.ts        # Template → Phase[] conversion
+│   │   ├── phaseUtils.ts            # Icon / guidance / type helpers
+│   │   ├── exerciseInstructions.ts  # Per-phase instruction text
+│   │   ├── exportUtils.ts           # CSV / PDF export
+│   │   ├── profileValidation.ts     # JSON-schema check on imports
+│   │   └── logger.ts                # Dev-gated console wrapper
+│   ├── config/
+│   │   └── sessionTemplates.ts      # All built-in session templates
+│   ├── constants/defaults.ts        # Default schedule + max hold
+│   ├── types/index.ts               # Shared TypeScript types
+│   ├── App.tsx                      # Root component, routing
+│   └── index.tsx                    # Entry point
+├── package.json
+└── README.md
 ```
 
 ### Available Scripts
-- `npm start`: Start React development server
-- `npm run electron-dev`: Start both React and Electron in development mode
-- `npm run build`: Build the React app for production
-- `npm run electron`: Build and package the Electron app
+- `npm start` — React dev server (localhost:3000)
+- `npm run electron-dev` — Full Electron dev mode with hot reload
+- `npm run build` — Production React build
+- `npm test` — Run all tests (168+ tests via Jest + React Testing Library)
+- `npm run dist` — Build + package Electron app for current platform
+- `npm run dist-all` — Build for macOS, Windows, and Linux
 
 ### Key Technical Features
-- **React + Electron**: Modern desktop application framework
-- **Tailwind CSS**: Utility-first CSS framework for responsive design
-- **Local Storage**: Data persistence using Electron's file system
-- **Real-time Updates**: Dynamic session generation based on user parameters
-- **Modular Architecture**: Clean separation of concerns with reusable components
-- **Refactored Components**: Recently refactored for improved maintainability and modularity
+- **React 18 + TypeScript (strict mode)** — typed throughout, no `any` leaks
+- **Electron 28** — `contextIsolation: true`, `nodeIntegration: false`, contextBridge IPC
+- **Tailwind CSS** with `dark:` variants and persistent dark/light theme
+- **Web Audio API** for synthesised cues (no audio downloads needed)
+- **Web Speech API** for spoken voice cues with system voice picker
+- **Service worker + manifest** for offline-capable PWA install
+- **Reducer-based state** — three React contexts (App, Timer, Theme) with typed actions
+- **168+ tests** covering reducers, schedule logic, session parsing, modal behaviour, and import flows
 
-### Recent Technical Improvements (v1.1.0)
-- **Component Refactoring**: Extracted 5 focused components from the monolithic Timer component
-  - `SessionSelector`: Clean session type selection
-  - `SessionPreview`: Session phase overview
-  - `PhaseDisplay`: Active phase timer and guidance
-  - `ControlButtons`: Session control interface
-  - `SessionSummary`: Completion summary display
-- **Centralized Configuration**: Moved session templates to dedicated config files
-- **Modular Session Parsing**: Separated session parsing logic into focused utility modules
-- **Improved Code Organization**: Better separation of concerns and reduced component complexity
-- **Enhanced Maintainability**: Each component now has a single responsibility and can be tested independently
+### Recent Technical Improvements
+**v1.2 polish pass** *(unreleased)*
+- **Voice cues** via system text-to-speech with global voice picker, per-cue volume sliders, and a new "Minute Mark" cue that announces each minute into a phase
+- **Phase-aware spoken text** — phase name read aloud on start/end ("Begin diaphragmatic breathing", "Hold complete")
+- **Strict JSON-schema validation** on all imports — bad files now show a clear rejection message rather than corrupting state
+- **Modal focus trap, Escape-to-close, and focus restore** via a reusable `ModalShell` component applied to every dialog
+- **Offline-first service worker** — precaches audio + icons, network-first navigation, cache-first assets
+- **Lazy-loaded modals** — main bundle dropped ~3.9 kB gzipped
+- **Onboarding fix** — the focus you pick is now actually applied to today's session
+- **Start Session button** on today's card so you don't have to navigate to the Timer view manually
+
+**v1.1.0**
+- Component refactoring: extracted `SessionSelector`, `SessionPreview`, `PhaseDisplay`, `ControlButtons`, and `SessionSummary` from the original monolithic Timer
+- Centralised session-template configuration
+- Modular session-parser utilities
 
 ## 🤝 Contributing
 
