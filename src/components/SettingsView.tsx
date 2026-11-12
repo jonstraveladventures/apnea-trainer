@@ -1,7 +1,6 @@
 import React from 'react';
 import { Calendar, Settings, Download, Upload, Trash2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { generateSchedule, START_DATE } from '../utils/trainingLogic';
 import { DEFAULT_WEEKLY_SCHEDULE } from '../constants/defaults';
 import { Session, Profile, WeeklySchedule, CustomPhase, AudioPreferences } from '../types';
 import AudioSettings from './AudioSettings';

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
-import { generateSchedule, getLatestMaxHold, START_DATE, formatTime } from '../utils/trainingLogic';
+import { generateSchedule, getLatestMaxHold, todayISO, formatTime } from '../utils/trainingLogic';
 import { DEFAULT_WEEKLY_SCHEDULE, DEFAULT_MAX_HOLD } from '../constants/defaults';
 import {
   AppState,
@@ -329,7 +329,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 const createDefaultProfile = (): Profile => {
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + 30);
-  const defaultSchedule = generateSchedule(START_DATE, endDate, DEFAULT_MAX_HOLD);
+  const defaultSchedule = generateSchedule(todayISO(), endDate, DEFAULT_MAX_HOLD, DEFAULT_WEEKLY_SCHEDULE);
 
   return {
     name: 'Default Profile',

@@ -6,10 +6,12 @@ import Timer from './components/Timer';
 import ProgressChart from './components/ProgressChart';
 import WeekPlan from './components/WeekPlan';
 import SettingsView from './components/SettingsView';
+import dayjs from 'dayjs';
 import {
   generateSchedule,
+  applyWeeklySchedule,
   getLatestMaxHold,
-  START_DATE,
+  todayISO,
   formatTime
 } from './utils/trainingLogic';
 import { DEFAULT_WEEKLY_SCHEDULE } from './constants/defaults';
@@ -42,21 +44,19 @@ function App() {
 
   const location = useLocation();
 
-  // Regenerate schedule when max hold changes
+  // Keep the plan 30 days ahead and its descriptions in step with the max
+  // hold. History, completed sessions and days changed by hand are kept.
   useEffect(() => {
     if (currentMaxHold !== null) {
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 30);
-
-      const newSchedule = generateSchedule(START_DATE, endDate, currentMaxHold);
-
-      // Merge with existing sessions to preserve user data
-      const mergedSessions = newSchedule.map((newSession: Session) => {
-        const existingSession = sessions.find((s: Session) => s.date === newSession.date);
-        return existingSession ? { ...newSession, ...existingSession } : newSession;
-      });
-
-      actions.setSessions(mergedSessions);
+      const endDate = dayjs().add(30, 'day').format('YYYY-MM-DD');
+      actions.setSessions(applyWeeklySchedule(
+        sessions,
+        { ...DEFAULT_WEEKLY_SCHEDULE, ...weeklySchedule },
+        currentMaxHold,
+        todayISO(),
+        endDate,
+        { reassignTypes: false }
+      ));
     }
   }, [currentMaxHold]); // eslint-disable-line
 
@@ -85,7 +85,7 @@ function App() {
   };
 
   const handleTimerComplete = (sessionTime: number, bestHold: number | null = null) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayISO();
     const todaySession = sessions.find((s: Session) => s.date === today);
 
     if (todaySession) {
@@ -120,7 +120,7 @@ function App() {
 
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + 30);
-    const schedule = generateSchedule(START_DATE, endDate, maxHold);
+    const schedule = generateSchedule(todayISO(), endDate, maxHold, DEFAULT_WEEKLY_SCHEDULE);
 
     const newProfile: Profile = {
       name: newProfileName,
@@ -143,11 +143,11 @@ function App() {
   const handleOnboardingComplete = (maxHoldSeconds: number, focus: string) => {
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + 30);
-    const schedule = generateSchedule(START_DATE, endDate, maxHoldSeconds);
+    const schedule = generateSchedule(todayISO(), endDate, maxHoldSeconds, DEFAULT_WEEKLY_SCHEDULE);
 
     // Honour the focus chosen in onboarding — override today's session
     // (the wizard frames it as "pick a session type to start with").
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayISO();
     const personalisedSchedule = focus
       ? schedule.map((s: Session) =>
           s.date === today ? { ...s, focus, sessionType: focus } : s
@@ -337,34 +337,17 @@ function App() {
   const handleSaveWeeklySchedule = () => {
     actions.updateProfile(currentProfile, { weeklySchedule });
 
-    // Regenerate the schedule with the new weekly pattern
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 30);
-
-    const generateCustomSchedule = (startDate: string, endDate: Date, maxHoldSeconds: number | null): any[] => {
-      const schedule: any[] = [];
-      const currentDate = new Date(startDate);
-
-      while (currentDate <= endDate) {
-        const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-        const sessionType = (weeklySchedule as any)[dayOfWeek] || 'CO₂ Tolerance';
-
-        schedule.push({
-          date: currentDate.toISOString().split('T')[0],
-          focus: sessionType,
-          completed: false,
-          sessionTime: 0,
-          actualMaxHold: maxHoldSeconds
-        });
-
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      return schedule;
-    };
-
-    const newSchedule = generateCustomSchedule(START_DATE, endDate, currentMaxHold);
-    actions.setSessions(newSchedule);
+    // Re-plan from today on with the new weekly pattern. Past sessions,
+    // completed sessions and anything you recorded are kept.
+    const endDate = dayjs().add(30, 'day').format('YYYY-MM-DD');
+    actions.setSessions(applyWeeklySchedule(
+      sessions,
+      { ...DEFAULT_WEEKLY_SCHEDULE, ...weeklySchedule },
+      currentMaxHold,
+      todayISO(),
+      endDate,
+      { reassignTypes: true }
+    ));
 
     actions.setNotification({
       type: 'success',
@@ -386,7 +369,7 @@ function App() {
     );
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayISO();
   const todaySession = sessions.find((s: Session) => s.date === today);
   const completedSessions = sessions.filter((s: Session) => s.completed).length;
 

@@ -5,6 +5,7 @@ import {
   calculateProgress,
   generateSchedule,
   getLatestMaxHold,
+  applyWeeklySchedule,
 } from '../trainingLogic';
 import { Session } from '../../types/index';
 
@@ -155,5 +156,67 @@ describe('getLatestMaxHold', () => {
       { date: '2025-08-03', focus: 'B', notes: '', actualMaxHold: 200, completed: true },
     ];
     expect(getLatestMaxHold(sessions)).toBe(200);
+  });
+});
+
+describe('applyWeeklySchedule', () => {
+  // 2026-11-12 is a Thursday.
+  const today = '2026-11-12';
+  const weekly = {
+    monday: 'Maximal Breath-Hold Training',
+    tuesday: 'Breath Control',
+    wednesday: 'O₂ Tolerance',
+    thursday: 'Recovery & Flexibility',
+    friday: 'Max Breath-Hold',
+    saturday: 'Recovery & Flexibility',
+    sunday: 'Traditional CO₂ Tables'
+  };
+  const session = (date: string, extra: Partial<Session> = {}): Session => ({
+    date, focus: 'Breath Control', sessionType: 'Breath Control', notes: '', actualMaxHold: null, completed: false, ...extra
+  });
+
+  it('keeps past sessions exactly, re-plans uncompleted days from today and adds missing days', () => {
+    const past = session('2026-11-10', { completed: true, sessionTime: 900, actualMaxHold: 200, notes: 'good' });
+    const pastMissed = session('2026-11-11');
+    const result = applyWeeklySchedule([past, pastMissed, session('2026-11-12'), session('2026-11-13')], weekly, 240, today, '2026-11-15');
+
+    expect(result.map((s) => s.date)).toEqual(['2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15']);
+    expect(result[0]).toEqual(past);
+    expect(result[1]).toEqual(pastMissed);
+    expect(result.slice(2).map((s) => s.focus)).toEqual([
+      'Recovery & Flexibility', 'Max Breath-Hold', 'Recovery & Flexibility', 'Traditional CO₂ Tables'
+    ]);
+  });
+
+  it('never changes a completed, timed or noted session, or today with a recorded max hold', () => {
+    const kept = [
+      session('2026-11-12', { actualMaxHold: 210 }),
+      session('2026-11-13', { completed: true }),
+      session('2026-11-14', { notes: 'swap to Sunday' }),
+      session('2026-11-15', { sessionTime: 120 })
+    ];
+    const result = applyWeeklySchedule(kept, weekly, 240, today, '2026-11-15');
+    expect(result).toEqual(kept);
+  });
+
+  it('clears a max hold stamped on a future day that was never done', () => {
+    const result = applyWeeklySchedule([session('2026-11-13', { actualMaxHold: 240 })], weekly, 240, today, '2026-11-13');
+    expect(result[0].actualMaxHold).toBeNull();
+  });
+
+  it('without reassignTypes keeps the type of a day changed by hand', () => {
+    const result = applyWeeklySchedule([session('2026-11-13', { focus: 'Breath Control' })], weekly, 240, today, '2026-11-14', { reassignTypes: false });
+    const byDate = Object.fromEntries(result.map((s) => [s.date, s.focus]));
+    expect(byDate['2026-11-13']).toBe('Breath Control');
+    expect(byDate['2026-11-14']).toBe('Recovery & Flexibility');
+  });
+});
+
+describe('generateSchedule with a weekly schedule', () => {
+  it('uses the weekly schedule for each weekday', () => {
+    const schedule = generateSchedule('2026-11-09', '2026-11-15', 240, { monday: 'Breath Control', friday: 'CO₂ Tolerance' });
+    expect(schedule[0].focus).toBe('Breath Control');
+    expect(schedule[4].focus).toBe('CO₂ Tolerance');
+    schedule.forEach((s) => expect(s.actualMaxHold).toBeNull());
   });
 });

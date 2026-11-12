@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import type { WeeklySchedule } from '../../types';
 import ModalShell from '../ModalShell';
+import { getAllSessionTypes } from '../../config/sessionTemplates';
 
 interface WeeklyScheduleEditorModalProps {
   onSave: () => void;
@@ -35,7 +36,7 @@ function WeeklyScheduleEditorModal({ onSave, onChange }: WeeklyScheduleEditorMod
 
         <div className="space-y-6">
           <p className="text-gray-500 dark:text-deep-300">
-            Choose which session type to assign to each day of the week. This will determine your training schedule.
+            Choose the session type for each day of the week. Saving re-plans today and the days ahead; past and completed sessions are kept.
           </p>
 
           <div className="grid gap-4">
@@ -60,13 +61,9 @@ function WeeklyScheduleEditorModal({ onSave, onChange }: WeeklyScheduleEditorMod
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(key, e.target.value)}
                   className="bg-gray-200 dark:bg-deep-600 border border-gray-300 dark:border-deep-500 rounded px-3 py-2 text-gray-900 dark:text-white min-w-[200px]"
                 >
-                  <option value="Comfortable CO&#x2082; Training">Comfortable CO&#x2082; Training</option>
-                  <option value="O&#x2082; Tolerance">O&#x2082; Tolerance</option>
-                  <option value="Breath Control">Breath Control</option>
-                  <option value="Mental + Technique">Mental + Technique</option>
-                  <option value="Max Breath-Hold">Max Breath-Hold</option>
-                  <option value="Recovery & Flexibility">Recovery & Flexibility</option>
-                  <option value="Traditional CO&#x2082; Tables">Traditional CO&#x2082; Tables</option>
+                  {getAllSessionTypes().map((type: string) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
                   {Object.keys(profiles[currentProfile]?.customSessions || {}).map((sessionName: string) => (
                     <option key={sessionName} value={sessionName}>
                       {'\uD83C\uDFAF'} {sessionName}
