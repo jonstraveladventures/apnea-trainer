@@ -84,7 +84,7 @@ function App() {
     actions.toggleSessionComplete(date);
   };
 
-  const handleTimerComplete = (sessionTime: number) => {
+  const handleTimerComplete = (sessionTime: number, bestHold: number | null = null) => {
     const today = new Date().toISOString().split('T')[0];
     const todaySession = sessions.find((s: Session) => s.date === today);
 
@@ -92,7 +92,10 @@ function App() {
       const updatedSession = {
         ...todaySession,
         sessionTime: sessionTime,
-        completed: true
+        completed: true,
+        // Record the longest max hold achieved; a new best also raises the
+        // profile's max hold (see handleSessionUpdate).
+        ...(bestHold ? { actualMaxHold: bestHold } : {})
       };
       handleSessionUpdate(today, updatedSession);
     }
@@ -431,20 +434,8 @@ function App() {
               </div>
             </ErrorBoundary>
           } />
-          <Route path="/timer" element={
-            <ErrorBoundary fallbackTitle="Timer error">
-              <div className="max-w-4xl mx-auto">
-                <Timer
-                  onSessionComplete={handleTimerComplete}
-                  todaySession={todaySession}
-                  onSessionUpdate={handleSessionUpdate}
-                  sessions={sessions}
-                  currentMaxHold={currentMaxHold}
-                  customSessions={profiles[currentProfile]?.customSessions || {}}
-                />
-              </div>
-            </ErrorBoundary>
-          } />
+          {/* The Timer itself is rendered below, outside the routes. */}
+          <Route path="/timer" element={null} />
           <Route path="/progress" element={
             <ErrorBoundary fallbackTitle="Progress chart error">
               <div className="max-w-6xl mx-auto">
@@ -458,6 +449,24 @@ function App() {
             </ErrorBoundary>
           } />
         </Routes>
+
+        {/* Kept mounted on every page so a running session keeps its clock
+            and audio cues when you look at another page; hidden when not on /timer. */}
+        <div className={location.pathname === '/timer' ? undefined : 'hidden'}>
+          <ErrorBoundary fallbackTitle="Timer error">
+            <div className="max-w-4xl mx-auto">
+              <Timer
+                isVisible={location.pathname === '/timer'}
+                onSessionComplete={handleTimerComplete}
+                todaySession={todaySession}
+                onSessionUpdate={handleSessionUpdate}
+                sessions={sessions}
+                currentMaxHold={currentMaxHold}
+                customSessions={profiles[currentProfile]?.customSessions || {}}
+              />
+            </div>
+          </ErrorBoundary>
+        </div>
       </main>
 
       {/* Quick Actions Panel - Only show on Week Plan page */}

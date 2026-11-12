@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useReducer } from 'react';
 import { parseSessionPhases as parseSessionPhasesFromUtils } from '../utils/sessionParsers';
 import { SESSION_TEMPLATES } from '../config/sessionTemplates';
 import { formatTime } from '../utils/trainingLogic';
@@ -326,63 +326,8 @@ const TimerContext = createContext<TimerContextValue | null>(null);
 // Provider component
 export const TimerProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(timerReducer, initialTimerState);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Use refs for mutable time values to avoid recreating the interval every second
-  const stateRef = useRef<TimerState>(state);
-  stateRef.current = state;
-
-  // Timer tick effect — only depends on isRunning/isPaused, NOT on time values
-  useEffect(() => {
-    if (state.isRunning && !state.isPaused) {
-      intervalRef.current = setInterval(() => {
-        const s = stateRef.current;
-        dispatch({
-          type: TIMER_ACTIONS.UPDATE_TIME,
-          payload: {
-            time: s.time + 1,
-            sessionTime: s.isSessionActive ? s.sessionTime + 1 : s.sessionTime,
-            phaseTime: s.isSessionActive ? s.phaseTime + 1 : s.phaseTime
-          }
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [state.isRunning, state.isPaused]); // eslint-disable-line
-
-  // Phase progression effect
-  useEffect(() => {
-    if (state.isSessionActive && state.sessionPhases.length > 0) {
-      const currentPhaseData = state.sessionPhases[state.currentPhase];
-      if (currentPhaseData && state.phaseTime >= currentPhaseData.duration && currentPhaseData.duration > 0) {
-        // Move to next phase
-        if (state.currentPhase < state.sessionPhases.length - 1) {
-          dispatch({ type: TIMER_ACTIONS.NEXT_PHASE });
-        } else {
-          // Session completed
-          dispatch({
-            type: TIMER_ACTIONS.END_SESSION,
-            payload: {
-              summary: {
-                totalTime: state.sessionTime,
-                totalPhases: state.sessionPhases.length,
-                completedPhases: state.currentPhase + 1
-              }
-            }
-          });
-        }
-      }
-    }
-  }, [state.phaseTime, state.currentPhase, state.sessionPhases, state.isSessionActive, state.sessionTime]);
+  // The session clock (ticking, phase progression, audio cues) lives in a
+  // single place: the useSessionTimer hook. This provider only holds state.
 
   // Context value
   const value: TimerContextValue = {
@@ -480,7 +425,7 @@ export const TimerProvider = ({ children }: { children: React.ReactNode }) => {
         payload: { type, template }
       }),
 
-      // Direct dispatch access (for Timer.js interval that needs UPDATE_TIME)
+      // Direct dispatch access (for the session clock in useSessionTimer)
       dispatch,
 
       // Utility functions

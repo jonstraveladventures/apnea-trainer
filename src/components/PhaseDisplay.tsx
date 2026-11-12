@@ -117,6 +117,16 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
   return (
     <div className="mb-6 p-4 bg-white dark:bg-deep-800 rounded-lg border border-gray-200 dark:border-deep-700">
       <div className="text-center">
+        {/* Open-ended max hold: count-up stopwatch, no progress bar */}
+        {currentPhaseData.type === 'max_hold' && currentPhaseData.duration <= 0 && (
+          <div className="mb-6">
+            <div className="text-5xl font-mono text-ocean-400 mb-1" role="timer" aria-live="off">
+              {formatTime(phaseTime)}
+            </div>
+            <div className="text-sm text-gray-400 dark:text-deep-400">Hold Time</div>
+          </div>
+        )}
+
         {/* Phase Timer - Prominently displayed at the top */}
         {currentPhaseData.duration > 0 && currentPhaseData.type !== 'stretch_confirmation' && (
           <div className="mb-6">
@@ -225,11 +235,11 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
           </div>
         )}
 
-        {/* Max Hold Completion - Only for 100% max holds */}
-        {currentPhaseData.type === 'max_hold' && currentPhaseData.isMaxHold && (
+        {/* Max Hold Completion */}
+        {currentPhaseData.type === 'max_hold' && (
           <div className="mb-4">
             <div className="text-sm text-gray-500 dark:text-deep-300 mb-3">
-              Press the button when you have completed your max hold
+              Press the button as soon as you take your first breath
             </div>
             <button
               onClick={onMaxHoldComplete}
@@ -273,7 +283,8 @@ const PhaseDisplay: React.FC<PhaseDisplayProps> = ({
           <div className="border-t border-gray-200 dark:border-deep-700 pt-3 mt-3">
             <div className="text-xs text-gray-400 dark:text-deep-500 mb-1">Next: {sessionPhases[currentPhase + 1].description}</div>
             <div className="text-xs text-gray-400 dark:text-deep-400">
-              {getPhaseIcon(sessionPhases[currentPhase + 1].type)} {formatTime(sessionPhases[currentPhase + 1].duration)}
+              {getPhaseIcon(sessionPhases[currentPhase + 1].type)}{' '}
+              {sessionPhases[currentPhase + 1].duration > 0 ? formatTime(sessionPhases[currentPhase + 1].duration) : 'Until you stop'}
             </div>
           </div>
         )}

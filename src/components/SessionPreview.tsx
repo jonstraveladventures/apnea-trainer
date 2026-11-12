@@ -35,7 +35,7 @@ const SessionPreview: React.FC<SessionPreviewProps> = ({
               <span className="text-gray-500 dark:text-deep-300">{phase.description}</span>
             </div>
             <span className="text-gray-400 dark:text-deep-400 font-mono">
-              {phase.type === 'max_hold' && phase.percentage === 100 ? 'Max' : formatTime(phase.duration)}
+              {phase.type === 'max_hold' && phase.duration <= 0 ? 'Max' : formatTime(phase.duration)}
             </span>
           </div>
         ))}

@@ -224,3 +224,48 @@ describe('parseCo2Table', () => {
     });
   });
 });
+
+describe('max-hold sessions', () => {
+  const maxHold = 240;
+
+  it('Maximal Breath-Hold Training: open-ended attempts that can be completed, with a breathe-up first', () => {
+    const template = SESSION_TEMPLATES['Maximal Breath-Hold Training'];
+    const phases = parseSessionPhases('Maximal Breath-Hold Training', template, maxHold);
+    const attempts = phases.filter((p) => p.type === 'max_hold');
+    expect(attempts).toHaveLength(template.maximalAttempts as number);
+    attempts.forEach((p) => {
+      expect(p.duration).toBe(0);
+      expect(p.isMaxHold).toBe(true);
+    });
+    const firstAttempt = phases.findIndex((p) => p.type === 'max_hold');
+    expect(phases[firstAttempt - 1].type).toBe('breathing');
+    expect(phases[firstAttempt - 1].duration).toBe(template.preparationDuration);
+  });
+
+  it('Max Breath-Hold: a rest after every hold, and the max attempts are open-ended', () => {
+    const template = SESSION_TEMPLATES['Max Breath-Hold'];
+    const phases = parseSessionPhases('Max Breath-Hold', template, maxHold);
+    const holdTypes = ['hold', 'max_hold'];
+
+    // No two holds in a row anywhere in the session.
+    for (let i = 1; i < phases.length; i++) {
+      expect(holdTypes.includes(phases[i].type) && holdTypes.includes(phases[i - 1].type)).toBe(false);
+    }
+
+    const maxAttempts = phases.filter((p) => p.type === 'max_hold');
+    expect(maxAttempts).toHaveLength(2);
+    maxAttempts.forEach((p) => expect(p.duration).toBe(0));
+
+    const warmups = phases.filter((p) => p.type === 'hold' && p.percentage !== undefined);
+    expect(warmups.map((p) => p.duration)).toEqual([60, 84, 120, 156]);
+
+    // Long rest before, between and after the max attempts.
+    phases.forEach((p, i) => {
+      if (p.type === 'max_hold') {
+        expect(phases[i - 1].duration).toBe(template.maxAttemptRestDuration);
+        expect(phases[i + 1].type).toBe('rest');
+        expect(phases[i + 1].duration).toBe(template.maxAttemptRestDuration);
+      }
+    });
+  });
+});

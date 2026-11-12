@@ -14,6 +14,8 @@ export const SESSION_TEMPLATES: SessionTemplates = {
     stretchConfirmation: true,
     tidalBreathingDuration: 120,
     maxHoldPercentages: [25, 35, 50, 65, 100, 100],
+    warmupRestDuration: 120, // 2 min between warm-up holds
+    maxAttemptRestDuration: 240, // 4 min before, between and after max attempts
     co2ToleranceSets: 3,
     co2ToleranceHoldDuration: 45,
     co2ToleranceRestDuration: 45

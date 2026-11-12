@@ -18,19 +18,26 @@ interface UseSessionSetupProps {
  */
 const useSessionSetup = ({ todaySession, currentMaxHold, customSessions, parseSessionPhases, onShowMaxHoldModal }: UseSessionSetupProps): void => {
   const { state: timerState, actions: timerActions }: any = useTimerContext();
-  const { selectedSessionType, hasUserChangedSession } = timerState;
+  const { selectedSessionType, hasUserChangedSession, isSessionActive } = timerState;
 
-  // Set default session type to today's session when component loads
+  // Follow today's scheduled session until the user picks another one. The
+  // Timer mounts at app start, possibly before sessions have loaded, so the
+  // fallback must give way once today's session arrives.
   useEffect(() => {
-    if (todaySession?.focus && !hasUserChangedSession && !selectedSessionType) {
-      timerActions.setSelectedSessionType(todaySession.focus);
+    if (isSessionActive) return;
+    if (todaySession?.focus && !hasUserChangedSession) {
+      if (selectedSessionType !== todaySession.focus) {
+        timerActions.setSelectedSessionType(todaySession.focus);
+      }
     } else if (!selectedSessionType) {
       timerActions.setSelectedSessionType('Maximal Breath-Hold Training');
     }
-  }, [todaySession, hasUserChangedSession, selectedSessionType]); // eslint-disable-line
+  }, [todaySession?.focus, hasUserChangedSession, selectedSessionType, isSessionActive]); // eslint-disable-line
 
-  // Update session phases when selected session type changes
+  // Update session phases when selected session type or max hold changes.
+  // Never mid-session: a new personal best must not rebuild the running session.
   useEffect(() => {
+    if (isSessionActive) return;
     if (selectedSessionType && currentMaxHold) {
       const phases = parseSessionPhases(selectedSessionType, currentMaxHold);
       timerActions.setSessionPhases(phases);
@@ -40,7 +47,7 @@ const useSessionSetup = ({ todaySession, currentMaxHold, customSessions, parseSe
       timerActions.setMaxHoldCompleted(false);
       timerActions.setCurrentMaxHoldPhase(0);
     }
-  }, [selectedSessionType, currentMaxHold]); // eslint-disable-line
+  }, [selectedSessionType, currentMaxHold, isSessionActive]); // eslint-disable-line
 
   // Show max hold modal only if the user has no max hold on file at all.
   // (Don't conflate with `todaySession.actualMaxHold`, which is the *result*

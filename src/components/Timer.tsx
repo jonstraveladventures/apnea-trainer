@@ -20,7 +20,9 @@ import { Session, Phase, CustomSessions, SessionTemplates, AudioPreferences } fr
 import ModalShell from './ModalShell';
 
 interface TimerProps {
-  onSessionComplete: (sessionTime: number) => void;
+  /** False while another page is showing; the Timer stays mounted so a session keeps running. */
+  isVisible?: boolean;
+  onSessionComplete: (sessionTime: number, bestHold: number | null) => void;
   todaySession: Session | undefined;
   onSessionUpdate: (date: string, updatedSession: Session) => void;
   sessions: Session[];
@@ -28,7 +30,7 @@ interface TimerProps {
   customSessions: CustomSessions;
 }
 
-const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessionUpdate, sessions, currentMaxHold, customSessions }) => {
+const Timer: React.FC<TimerProps> = ({ isVisible = true, onSessionComplete, todaySession, onSessionUpdate, sessions, currentMaxHold, customSessions }) => {
   // ---- State comes from TimerContext ----
   const { state: timerState, actions: timerActions } = useTimerContext();
 
@@ -228,7 +230,7 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
 
         {/* Max Hold Modal */}
         <MaxHoldModal
-          isOpen={showMaxHoldModal}
+          isOpen={showMaxHoldModal && isVisible}
           onClose={() => setShowMaxHoldModal(false)}
           onSave={handleMaxHoldSave}
           currentMaxHold={todaySession?.actualMaxHold ?? null}
@@ -366,7 +368,7 @@ const Timer: React.FC<TimerProps> = ({ onSessionComplete, todaySession, onSessio
 
         {/* Exercise Instructions Modal */}
         <ModalShell
-          isOpen={!!(showInstructions && currentInstruction)}
+          isOpen={!!(showInstructions && currentInstruction) && isVisible}
           onClose={() => timerActions.setShowInstructions(false)}
           labelledBy="timer-instructions-title"
           panelClassName="bg-white dark:bg-deep-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"

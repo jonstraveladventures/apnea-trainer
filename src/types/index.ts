@@ -76,6 +76,8 @@ export interface SessionSummary {
   completedPhases: number;
   focus?: string;
   maxHold?: number | null;
+  /** Longest max hold completed in the session, in seconds. */
+  bestHold?: number | null;
 }
 
 // ---- Custom session types ----
@@ -102,6 +104,8 @@ export interface SessionTemplate {
   recoveryDuration?: number;
   // Max Breath-Hold
   maxHoldPercentages?: number[];
+  warmupRestDuration?: number;
+  maxAttemptRestDuration?: number;
   co2ToleranceSets?: number;
   co2ToleranceHoldDuration?: number;
   co2ToleranceRestDuration?: number;

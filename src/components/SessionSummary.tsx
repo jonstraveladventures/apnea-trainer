@@ -30,7 +30,11 @@ const SessionSummary: React.FC<SessionSummaryProps> = ({
           <div>Focus: {sessionSummary?.focus || 'Unknown'}</div>
           <div>Total Time: {formatTime(sessionSummary?.totalTime || 0)}</div>
           <div>Phases Completed: {sessionSummary?.completedPhases || 0}/{sessionSummary?.totalPhases || 0}</div>
-          <div>Based on Max Hold: {formatTime(sessionSummary?.maxHold || 0)}</div>
+          {sessionSummary.bestHold ? (
+            <div className="text-base font-semibold text-gray-900 dark:text-white pt-1">
+              Best hold: {formatTime(sessionSummary.bestHold)}
+            </div>
+          ) : null}
         </div>
         <div className="flex gap-2 justify-center mt-3">
           <button

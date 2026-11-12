@@ -48,12 +48,23 @@ export const parseMaximalBreathHoldTraining = (template: SessionTemplate, maxHol
   const maximalAttempts = template.maximalAttempts || 3;
   const maximalRestDuration = template.restDuration || 240; // 3-4 minute rest periods
 
+  // Relaxed breathe-up before the first attempt
+  if (template.preparationDuration) {
+    phases.push({
+      type: 'breathing',
+      duration: template.preparationDuration,
+      description: `Breathe-up (${formatTime(template.preparationDuration)})`,
+      instructions: 'Slow, relaxed breathing with long exhales. Let your heart rate settle before the first attempt.'
+    });
+  }
+
   for (let i = 0; i < maximalAttempts; i++) {
     phases.push({
       type: 'max_hold',
       duration: 0, // Maximal holds are indefinite (user stops when needed)
       description: `Maximal Breath-Hold Attempt ${i + 1}/${maximalAttempts}`,
       isMaximalHold: true,
+      isMaxHold: true,
       instructions: 'Perform a maximal breath-hold. Stop at first sign of discomfort or when you reach your limit.'
     });
 
@@ -80,8 +91,6 @@ export const parseMaximalBreathHoldTraining = (template: SessionTemplate, maxHol
   return phases;
 };
 
-// Unified CO₂ table parser — used by both 'Traditional CO₂ Tables' and 'CO₂ Tolerance'
-// (previously two nearly identical functions)
 export const parseCo2Table = (template: SessionTemplate, maxHoldSeconds: number, descriptionPrefix: string = 'CO₂'): Phase[] => {
   const phases: Phase[] = [];
 
@@ -275,20 +284,45 @@ export const parseMaxBreathHold = (template: SessionTemplate, maxHoldSeconds: nu
 
   // Use template or default values
   const maxHoldPercentages = template.maxHoldPercentages || [25, 35, 50, 65, 100, 100];
+  const warmupRest = template.warmupRestDuration || 120;
+  const maxAttemptRest = template.maxAttemptRestDuration || 240;
+  const maxAttemptCount = maxHoldPercentages.filter((p) => p >= 100).length;
+  let maxAttemptNumber = 0;
 
-  // Progressive max hold phases
+  // Progressive warm-up holds, then indefinite max attempts, with a rest after each
   for (let i = 0; i < maxHoldPercentages.length; i++) {
     const percentage = maxHoldPercentages[i];
+    const isMaxAttempt = percentage >= 100;
 
-    // Max hold phase
-    const holdDuration = Math.round(maxHoldSeconds * (percentage / 100));
+    if (isMaxAttempt) {
+      maxAttemptNumber++;
+      phases.push({
+        type: 'max_hold',
+        duration: 0, // Indefinite: count up so the diver can go past their previous best
+        description: maxAttemptCount > 1 ? `Max Hold ${maxAttemptNumber}/${maxAttemptCount}` : 'Max Hold',
+        phaseIndex: i,
+        percentage,
+        isMaxHold: true
+      });
+    } else {
+      const holdDuration = Math.round(maxHoldSeconds * (percentage / 100));
+      phases.push({
+        type: 'hold',
+        duration: holdDuration,
+        description: `${percentage}% of max (${formatTime(holdDuration)})`,
+        phaseIndex: i,
+        percentage
+      });
+    }
+
+    // Rest after every hold. Longer rest when the next hold (or the CO₂ block) follows a max attempt
+    // or leads into one.
+    const nextIsMax = (maxHoldPercentages[i + 1] ?? 0) >= 100;
+    const restDuration = isMaxAttempt || nextIsMax ? maxAttemptRest : warmupRest;
     phases.push({
-      type: percentage === 100 ? 'max_hold' : 'hold', // Use 'hold' for fixed times, 'max_hold' for indefinite
-      duration: holdDuration,
-      description: percentage === 100 ? 'Max Hold' : `${percentage}% of max`,
-      phaseIndex: i,
-      percentage: percentage,
-      isMaxHold: percentage === 100
+      type: 'rest',
+      duration: restDuration,
+      description: `Rest (${formatTime(restDuration)})`
     });
   }
 
