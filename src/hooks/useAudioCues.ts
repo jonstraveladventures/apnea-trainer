@@ -2,6 +2,21 @@ import { useRef, useCallback, useEffect } from 'react';
 import { AudioCueType, AudioPreferences, AudioSound } from '../types';
 import * as logger from '../utils/logger';
 import { useSpeech } from './useSpeech';
+import { cueSentence, CueContext } from '../audio/voiceLines';
+import voiceManifest from '../audio/voiceManifest.json';
+
+export type { CueContext };
+
+/** Recordings made by scripts/make_voice.py: sentence -> file in public/voice/. */
+const VOICE_FILES: Record<string, string> = (voiceManifest as { sentences: Record<string, string> }).sentences;
+const COUNTDOWN_FILE: string = (voiceManifest as { countdown: string }).countdown;
+const voiceUrl = (file: string): string => `${process.env.PUBLIC_URL}/voice/${file}`;
+
+/** Recorded file for a sentence, if there is one. */
+export const recordingFor = (sentence: string): string | undefined => VOICE_FILES[sentence];
+
+/** Most clips waiting to play; older ones are dropped so speech never falls behind the session. */
+const MAX_QUEUED = 3;
 
 /** Default audio preferences — voice cues for the spoken bits, chimes for phase boundaries. */
 export const DEFAULT_AUDIO_PREFERENCES: AudioPreferences = {
@@ -20,23 +35,15 @@ export const SOUND_LABELS: Record<AudioSound, string> = {
   'gentle-bell': 'Gentle Bell',
   'completion-fanfare': 'Completion Fanfare',
   'soft-pulse': 'Soft Pulse',
-  'voice': 'Voice (text-to-speech)',
+  'voice': 'Voice',
   'none': 'None',
 };
-
-/** Optional per-cue context, used to build voice text. */
-export interface CueContext {
-  /** Phase description, e.g. "Hold 1: 60s" or "Diaphragmatic Breathing". */
-  phaseDescription?: string;
-  /** Used by minuteMark — number of full minutes elapsed in the current phase. */
-  minutes?: number;
-}
 
 export interface UseAudioCuesReturn {
   playCue: (cueType: AudioCueType, context?: CueContext) => void;
   /** `volume` is 0-1; defaults to 1 (full). */
   playSound: (sound: AudioSound, volume?: number) => void;
-  /** Speak arbitrary text using the user's chosen voice. */
+  /** Say a sentence: its recording if there is one, otherwise the browser's voice. */
   speak: (text: string, volume?: number) => void;
 }
 
@@ -288,11 +295,13 @@ function playSoftPulse(ctx: AudioContext, dest: AudioNode) {
 // ---- Main hook ----
 
 /**
- * Hook that generates rich audio cues using the Web Audio API.
+ * Hook that plays the audio cues.
  *
- * All sounds are synthesised with layered OscillatorNodes — no extra audio
- * assets needed. The countdown cue defaults to the mp3 voice countdown
- * when sound is set to 'singing-bowl' (the default).
+ * Spoken cues play recordings made with Kokoro (public/voice/, listed in
+ * src/audio/voiceManifest.json), queued so one never cuts off another. A
+ * sentence with no recording, such as a custom session's own phase name, is
+ * spoken by the browser's voice instead. Chimes are synthesised with the Web
+ * Audio API.
  */
 const useAudioCues = (preferences?: AudioPreferences): UseAudioCuesReturn => {
   const prefs = preferences ?? DEFAULT_AUDIO_PREFERENCES;
@@ -301,6 +310,8 @@ const useAudioCues = (preferences?: AudioPreferences): UseAudioCuesReturn => {
   // Lazy-init AudioContext (browsers require a user gesture first)
   const ctxRef = useRef<AudioContext | null>(null);
   const countdownAudioRef = useRef<HTMLAudioElement | null>(null);
+  const queueRef = useRef<{ src: string; volume: number }[]>([]);
+  const currentRef = useRef<HTMLAudioElement | null>(null);
 
   const getCtx = useCallback((): AudioContext => {
     if (!ctxRef.current) {
@@ -312,17 +323,51 @@ const useAudioCues = (preferences?: AudioPreferences): UseAudioCuesReturn => {
     return ctxRef.current;
   }, []);
 
-  // Pre-load the countdown mp3 (kept as a non-voice fallback option).
+  // Load the countdown ahead of time so it starts exactly on its second.
   useEffect(() => {
-    countdownAudioRef.current = new Audio(`${process.env.PUBLIC_URL}/audio/countdown-5-4-3-2-1.mp3`);
+    countdownAudioRef.current = new Audio(voiceUrl(COUNTDOWN_FILE));
+    countdownAudioRef.current.preload = 'auto';
+    return () => {
+      queueRef.current = [];
+      currentRef.current?.pause();
+    };
   }, []);
 
-  /** Speak arbitrary text using the user's chosen voice. */
+  /** Play the next queued clip, if any. */
+  const playNext = useCallback(() => {
+    const next = queueRef.current.shift();
+    if (!next) {
+      currentRef.current = null;
+      return;
+    }
+    const audio = new Audio(next.src);
+    audio.volume = next.volume;
+    currentRef.current = audio;
+    const done = () => {
+      if (currentRef.current === audio) playNext();
+    };
+    audio.onended = done;
+    audio.onerror = done;
+    audio.play().catch((e) => {
+      logger.log('Voice clip failed to play:', e);
+      done();
+    });
+  }, []);
+
+  /** Say a sentence: its recording if there is one, otherwise the browser's voice. */
   const speak = useCallback(
     (text: string, volume?: number) => {
-      speakRaw(text, { voiceName: prefs.voiceName, volume: normalizeVolume(volume) });
+      if (!text) return;
+      const file = VOICE_FILES[text];
+      if (!file) {
+        speakRaw(text, { voiceName: prefs.voiceName, volume: normalizeVolume(volume) });
+        return;
+      }
+      queueRef.current.push({ src: voiceUrl(file), volume: normalizeVolume(volume) });
+      while (queueRef.current.length > MAX_QUEUED) queueRef.current.shift();
+      if (!currentRef.current) playNext();
     },
-    [prefs.voiceName, speakRaw],
+    [prefs.voiceName, speakRaw, playNext],
   );
 
   /** Play a specific AudioSound, optionally at a reduced volume (0-1). */
@@ -360,7 +405,7 @@ const useAudioCues = (preferences?: AudioPreferences): UseAudioCuesReturn => {
 
   /**
    * Play the cue for a given cue type, respecting user preferences.
-   * Pass `context` for cues whose voice text depends on the current phase
+   * Pass `context` for cues whose words depend on the current phase
    * (phaseStart / phaseEnd / minuteMark).
    */
   const playCue = useCallback(
@@ -370,32 +415,22 @@ const useAudioCues = (preferences?: AudioPreferences): UseAudioCuesReturn => {
 
       const volume = normalizeVolume(config.volume);
 
-      // Special case: spoken countdown. The trigger fires at phaseTime ===
-      // duration - 6, so we have ~6 seconds to land "five … one" on the
-      // beat. Schedule each digit individually so the engine's prosody
-      // can't drift the timing. A reduced rate stretches each word so it
-      // fills most of its 1-second slot (~0.7s of audio).
-      // Countdown + voice = bundled mp3. Web Speech API can't reliably
-      // deliver five evenly-paced words in 5 seconds (huge inter-utterance
-      // latency varies by voice). The mp3 is a real recorded voice and is
-      // precisely 5 seconds long, so we route voice-mode countdown to it.
+      // Spoken countdown: one recording with each word on its second.
       if (cueType === 'countdown' && config.sound === 'voice') {
-        if (countdownAudioRef.current) {
-          countdownAudioRef.current.currentTime = 0;
-          countdownAudioRef.current.volume = volume;
-          countdownAudioRef.current.play().catch((e) => logger.log('Audio play failed:', e));
+        const audio = countdownAudioRef.current;
+        if (audio) {
+          audio.currentTime = 0;
+          audio.volume = volume;
+          audio.play().catch((e) => logger.log('Countdown failed to play:', e));
         }
         return;
       }
 
-      // Other voice-mode cues route to SpeechSynthesis with cue-appropriate text.
       if (config.sound === 'voice') {
-        const text = buildCueText(cueType, context);
-        if (text) speak(text, volume);
+        speak(cueSentence(cueType, context), volume);
         return;
       }
 
-      // Other cues fall through to the synth chimes.
       playSound(config.sound, volume);
     },
     [prefs, playSound, speak],
@@ -403,39 +438,5 @@ const useAudioCues = (preferences?: AudioPreferences): UseAudioCuesReturn => {
 
   return { playCue, playSound, speak };
 };
-
-/**
- * Build the spoken text for a voice cue. Returns an empty string for cues
- * where the context is missing the data we'd need to say something useful.
- */
-function buildCueText(cueType: AudioCueType, ctx: CueContext): string {
-  const phase = (ctx.phaseDescription || '').trim();
-  switch (cueType) {
-    case 'countdown':
-      return 'Five. Four. Three. Two. One.';
-    case 'phaseStart':
-      return phase ? `Begin ${phase}` : 'Begin';
-    case 'phaseEnd':
-      return phase ? `${phase} complete` : 'Complete';
-    case 'sessionComplete':
-      return 'Session complete. Well done.';
-    case 'minuteMark':
-      if (typeof ctx.minutes !== 'number' || ctx.minutes < 1) return '';
-      return ctx.minutes === 1 ? 'One minute' : `${numberToWords(ctx.minutes)} minutes`;
-    default:
-      return '';
-  }
-}
-
-/** Spell small integers as words (more natural-sounding than digits to TTS). */
-function numberToWords(n: number): string {
-  const words = [
-    'zero', 'one', 'two', 'three', 'four', 'five',
-    'six', 'seven', 'eight', 'nine', 'ten',
-    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
-    'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty',
-  ];
-  return words[n] ?? String(n);
-}
 
 export default useAudioCues;

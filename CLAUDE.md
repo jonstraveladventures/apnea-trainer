@@ -129,19 +129,19 @@ Tailwind CSS with `darkMode: 'class'` in `tailwind.config.js`:
 
 ## Audio System
 
-- **useAudioCues hook** synthesizes all sounds via Web Audio API using layered OscillatorNodes — no audio file downloads needed
-- **Available sounds**:
+- **Spoken cues are recorded**: `src/audio/voiceLines.ts` builds every sentence (`cueSentence`); `scripts/make_voice.py` records every sentence the built-in sessions can produce (listed by `src/audio/allVoiceSentences.ts`) with Kokoro (`~/bin/tts`, voice af_heart, speed 0.9), levels them to -16 LUFS and writes `public/voice/*.mp3`, `public/voice/index.json` (service worker) and `src/audio/voiceManifest.json` (bundled). The countdown is five recorded words placed exactly 1 s apart in a 5.00 s file. Re-run the script after changing phase descriptions, session counts or cue wording; a test fails if a built-in phase has no recording.
+- **useAudioCues** plays recordings through a queue (max 3 waiting), falls back to the browser's SpeechSynthesis (`useSpeech`, user-chosen device voice) for sentences with no recording, and synthesises the chimes via Web Audio
+- **Available chimes**:
   - `singing-bowl` — Layered harmonics (A3 + 4 overtones) with long natural decay, warm and resonant
   - `double-chime-up` — Two ascending notes (C5→E5) with harmonic shimmer, signals "begin"
   - `double-chime-down` — Two descending notes (E5→C5), signals "complete"
   - `gentle-bell` — D5 bell with inharmonic partials, soft and subtle
   - `completion-fanfare` — 4-note ascending arpeggio (C5-E5-G5-C6), celebratory
   - `soft-pulse` — Low G3 throb with sub-harmonic, gentle awareness cue
-- **Cue points**: countdown (-6s, always mp3 voice), phaseStart, phaseEnd, sessionComplete
-- **Defaults**: All cues enabled — countdown (voice mp3), phaseStart (rising chime), phaseEnd (singing bowl), sessionComplete (fanfare)
-- **AudioSettings component** lets users configure each cue: enable/disable, sound selection, preview
+- **Cue points**: countdown (starts 5 s before a phase ends), phaseStart, phaseEnd, sessionComplete, minuteMark
+- **Defaults**: All cues enabled; voice for countdown, phaseStart, sessionComplete and minuteMark, singing bowl for phaseEnd
+- **AudioSettings component** lets users configure each cue: enable/disable, sound selection, volume, preview
 - Preferences stored per-profile in `audioPreferences` field
-- Original mp3 voice countdown (`public/audio/countdown-5-4-3-2-1.mp3`) is always used for countdown cue
 
 ## CI/CD
 

@@ -3,6 +3,7 @@ import { Volume2, Play } from 'lucide-react';
 import { AudioPreferences, AudioCueType, AudioSound, AudioCueConfig } from '../types';
 import useAudioCues, { SOUND_LABELS } from '../hooks/useAudioCues';
 import { useSpeech } from '../hooks/useSpeech';
+import { VOICE_PREVIEW_SENTENCE } from '../audio/voiceLines';
 
 interface AudioSettingsProps {
   preferences: AudioPreferences;
@@ -12,7 +13,7 @@ interface AudioSettingsProps {
 const CUE_LABELS: Record<AudioCueType, { title: string; description: string }> = {
   countdown: {
     title: 'Countdown',
-    description: 'Five-second countdown before each phase ends. Voice mode uses a precisely-timed recorded mp3.',
+    description: 'Counts down the last five seconds of each phase, one number on each second',
   },
   phaseStart: {
     title: 'Phase Start',
@@ -28,7 +29,7 @@ const CUE_LABELS: Record<AudioCueType, { title: string; description: string }> =
   },
   minuteMark: {
     title: 'Minute Mark',
-    description: 'Spoken every full minute into a phase ("one minute", "two minutes", …)',
+    description: 'Spoken every full minute into a phase: "One minute", "Two minutes" and so on',
   },
 };
 
@@ -56,7 +57,7 @@ const DEFAULT_CONFIG: Record<AudioCueType, AudioCueConfig> = {
 
 const AudioSettings: React.FC<AudioSettingsProps> = ({ preferences, onSave }) => {
   const audioCues = useAudioCues(preferences);
-  const { voices, speak } = useSpeech();
+  const { voices } = useSpeech();
 
   /** Get the saved config for a cue, falling back to a sane default if missing. */
   const cfgFor = (cueType: AudioCueType) =>
@@ -92,9 +93,7 @@ const AudioSettings: React.FC<AudioSettingsProps> = ({ preferences, onSave }) =>
   };
 
   const previewVoice = () => {
-    speak('This is your training voice. Begin diaphragmatic breathing.', {
-      voiceName: preferences.voiceName,
-    });
+    audioCues.speak(VOICE_PREVIEW_SENTENCE);
   };
 
   const handlePreview = (cueType: AudioCueType) => {
@@ -113,9 +112,8 @@ const AudioSettings: React.FC<AudioSettingsProps> = ({ preferences, onSave }) =>
         Audio Cues
       </h2>
       <p className="text-gray-500 dark:text-deep-300 mb-4">
-        Configure what plays at key moments during your training session. Pick "Voice"
-        for spoken cues using your system's text-to-speech engine, or one of the
-        synthesised chimes.
+        Choose what plays at key moments in a session: a spoken cue ("Voice") or one
+        of the chimes.
       </p>
 
       {/* Global voice picker — applies to any cue whose sound is set to "voice". */}
@@ -124,8 +122,9 @@ const AudioSettings: React.FC<AudioSettingsProps> = ({ preferences, onSave }) =>
           <div className="flex-1 min-w-[200px]">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Voice</h3>
             <p className="text-gray-500 dark:text-deep-300 text-sm">
-              Used by any cue whose sound is set to "Voice". macOS Siri voices sound
-              the most natural; Windows/Linux quality varies.
+              Spoken cues are recorded in advance, so they sound the same on every device
+              and work offline. Phrases with no recording, such as the phase names of your
+              own custom sessions, use your device's voice, chosen here.
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -133,9 +132,9 @@ const AudioSettings: React.FC<AudioSettingsProps> = ({ preferences, onSave }) =>
               value={preferences.voiceName ?? ''}
               onChange={(e) => handleVoiceChange(e.target.value)}
               className="bg-white dark:bg-deep-700 border border-gray-300 dark:border-deep-600 rounded px-3 py-1.5 text-sm text-gray-900 dark:text-white max-w-xs"
-              aria-label="Voice"
+              aria-label="Device voice for phrases with no recording"
             >
-              <option value="">System default</option>
+              <option value="">Device default</option>
               {voices.map((v) => (
                 <option key={v.name} value={v.name}>
                   {v.name} ({v.lang})
@@ -145,7 +144,7 @@ const AudioSettings: React.FC<AudioSettingsProps> = ({ preferences, onSave }) =>
             <button
               onClick={previewVoice}
               className="btn-secondary flex items-center gap-1 text-sm px-3 py-1.5"
-              title="Preview voice"
+              title="Preview the recorded voice"
             >
               <Play className="w-3 h-3" />
               Preview
@@ -154,8 +153,8 @@ const AudioSettings: React.FC<AudioSettingsProps> = ({ preferences, onSave }) =>
         </div>
         {voices.length === 0 && (
           <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-            No voices detected. Your browser may need a moment to load them, or your
-            system may have none installed.
+            No device voices found. The recorded cues still play; only phrases with no
+            recording will be silent.
           </p>
         )}
       </div>

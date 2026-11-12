@@ -67,9 +67,8 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 - **Easy Profile Switching**: Quickly switch between profiles with a dropdown menu
 
 ### 🔊 Audio Cues
-- **Spoken Voice Cues**: System text-to-speech announces phase starts, ends, minute marks, and session completion ("Begin diaphragmatic breathing", "One minute", "Hold complete", "Session complete")
-- **Voice Picker**: Choose any installed voice on your system — macOS Siri voices sound especially natural
-- **Precision Countdown**: Five-second voice countdown before each phase ends, using a precisely-timed recorded mp3
+- **Spoken Voice Cues**: A recorded voice announces each phase as it starts and ends, every full minute and the end of the session ("Begin comfortable hold, three out of seven", "One minute", "Session complete. Well done."). Every sentence the built-in sessions can say is recorded in advance, so the voice is the same on every device and works offline. Phrases with no recording, such as the phase names of your own custom sessions, use your device's voice, which you can choose in Settings.
+- **Countdown**: The last five seconds of each phase are counted down, one number on each second
 - **Synthesised Chimes**: Singing bowl, rising/falling chimes, gentle bell, and completion fanfare available as alternatives — all generated in-browser, no downloads
 - **Per-Cue Volume**: Independent volume slider for every cue point
 
@@ -94,7 +93,7 @@ A comprehensive desktop application for freediving and breath-hold training, bui
 ### Settings – Profile, Schedule & Audio Cues
 <img src="at3.png" alt="Settings: profile, schedule, and audio cues" width="600" />
 
-*The Settings page — profile management, weekly schedule editor, and the Audio Cues section with a global voice picker plus per-cue toggles, sound choice, and volume sliders.*
+*The Settings page — profile management, weekly schedule editor, and the Audio Cues section with a voice preview plus per-cue toggles, sound choice, and volume sliders.*
 
 ### Settings – Session Templates & Custom Sessions
 <img src="at4.png" alt="Settings: session templates" width="600" />
@@ -378,7 +377,7 @@ apnea-trainer/
 │   ├── preload.js                   # Preload script (contextBridge IPC)
 │   ├── service-worker.js            # PWA offline cache
 │   ├── manifest.json                # PWA manifest
-│   ├── audio/                       # Bundled mp3 cues (countdown voice)
+│   ├── voice/                       # Recorded voice cues (made by scripts/make_voice.py)
 │   └── index.html                   # Main HTML
 ├── src/                             # React + TypeScript source
 │   ├── components/
@@ -391,7 +390,7 @@ apnea-trainer/
 │   │   ├── WeekPlan.tsx             # 7-day dashboard
 │   │   ├── ProgressChart.tsx        # Analytics dashboard
 │   │   ├── SettingsView.tsx         # Settings page
-│   │   ├── AudioSettings.tsx        # Voice picker + per-cue config
+│   │   ├── AudioSettings.tsx        # Voice preview + per-cue config
 │   │   ├── ModalShell.tsx           # A11y modal wrapper (focus trap, ESC)
 │   │   ├── ErrorBoundary.tsx        # Route-level error fallback
 │   │   ├── progress/                # Progress sub-components (charts, records)
@@ -403,8 +402,8 @@ apnea-trainer/
 │   ├── hooks/
 │   │   ├── useSessionTimer.ts       # 1-second interval + phase progression
 │   │   ├── useSessionSetup.ts       # Initialise phases from today's session
-│   │   ├── useAudioCues.ts          # Web Audio synth + cue routing
-│   │   ├── useSpeech.ts             # SpeechSynthesis voice helper
+│   │   ├── useAudioCues.ts          # Plays recorded voice cues and synthesised chimes
+│   │   ├── useSpeech.ts             # Device voice for phrases with no recording
 │   │   └── useFocusTrap.ts          # Modal focus management
 │   ├── utils/
 │   │   ├── trainingLogic.ts         # Schedule generation, formatting
@@ -431,13 +430,14 @@ apnea-trainer/
 - `npm test` — Run all tests (168+ tests via Jest + React Testing Library)
 - `npm run dist` — Build + package Electron app for current platform
 - `npm run dist-all` — Build for macOS, Windows, and Linux
+- `python3 scripts/make_voice.py` — Record the voice cues into `public/voice/` with Kokoro through the `tts` command. It reads the sentences from the app's own code (`src/audio/allVoiceSentences.ts`), so run it after changing a session's phases or wording. `--voice` picks another Kokoro voice, `--force` records everything again and `--check` transcribes every recording to confirm its words.
 
 ### Key Technical Features
 - **React 18 + TypeScript (strict mode)** — typed throughout, no `any` leaks
 - **Electron 28** — `contextIsolation: true`, `nodeIntegration: false`, contextBridge IPC
 - **Tailwind CSS** with `dark:` variants and persistent dark/light theme
 - **Web Audio API** for synthesised cues (no audio downloads needed)
-- **Web Speech API** for spoken voice cues with system voice picker
+- **Recorded voice cues** made locally with the Kokoro-82M text-to-speech model (Apache 2.0 licence), with the device's own voice for phrases that have no recording
 - **Service worker + manifest** for offline-capable PWA install
 - **Reducer-based state** — three React contexts (App, Timer, Theme) with typed actions
 - **168+ tests** covering reducers, schedule logic, session parsing, modal behaviour, and import flows

@@ -1,14 +1,14 @@
-// Offline support. On install the worker caches the app shell plus every file
-// the build lists in asset-manifest.json (the main bundle and the separately
-// loaded chunks for each window), so every part of the app works offline
-// after the first visit, not only the parts that were opened while online.
-const CACHE_NAME = 'apnea-trainer-v3';
+// Offline support. On install the worker caches the app shell, every file the
+// build lists in asset-manifest.json (the main bundle and the separately
+// loaded chunks for each window) and every voice recording listed in
+// voice/index.json, so every part of the app works offline after the first
+// visit, not only the parts that were opened while online.
+const CACHE_NAME = 'apnea-trainer-v4';
 
 const SHELL_URLS = [
   '.',
   './index.html',
   './manifest.json',
-  './audio/countdown-5-4-3-2-1.mp3',
   './icon-192.png',
   './icon-512.png',
 ];
@@ -38,12 +38,25 @@ function cacheEach(cache, urls) {
   );
 }
 
+/** Voice recordings to cache, read from voice/index.json. */
+async function voiceUrls() {
+  try {
+    const res = await fetch('./voice/index.json', { cache: 'reload' });
+    if (!res.ok) return [];
+    const index = await res.json();
+    const files = [index.countdown, ...Object.values(index.sentences || {})];
+    return ['./voice/index.json', ...files.filter(Boolean).map((f) => `./voice/${f}`)];
+  } catch (e) {
+    return [];
+  }
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
-      const assets = await buildAssetUrls();
-      await cacheEach(cache, [...SHELL_URLS, ...assets]);
+      const [assets, voice] = await Promise.all([buildAssetUrls(), voiceUrls()]);
+      await cacheEach(cache, [...SHELL_URLS, ...assets, ...voice]);
       await self.skipWaiting();
     })()
   );
@@ -56,14 +69,15 @@ self.addEventListener('activate', (event) => {
       const names = await caches.keys();
       await Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)));
 
-      // Drop hashed bundles from earlier builds that the current build no longer uses.
-      const current = new Set((await buildAssetUrls()).map((u) => new URL(u, self.location).href));
-      if (current.size > 0) {
+      // Drop bundles and recordings from earlier versions that this one no longer uses.
+      const [assets, voice] = await Promise.all([buildAssetUrls(), voiceUrls()]);
+      const current = new Set([...assets, ...voice].map((u) => new URL(u, self.location).href));
+      if (assets.length > 0 && voice.length > 0) {
         const cache = await caches.open(CACHE_NAME);
         const requests = await cache.keys();
         await Promise.all(
           requests
-            .filter((req) => new URL(req.url).pathname.includes('/static/') && !current.has(req.url))
+            .filter((req) => /\/(static|voice)\//.test(new URL(req.url).pathname) && !current.has(req.url))
             .map((req) => cache.delete(req))
         );
       }
