@@ -1,9 +1,10 @@
-// Bump CACHE_NAME whenever the precache list changes so old entries are evicted.
-const CACHE_NAME = 'apnea-trainer-v2';
+// Offline support. On install the worker caches the app shell plus every file
+// the build lists in asset-manifest.json (the main bundle and the separately
+// loaded chunks for each window), so every part of the app works offline
+// after the first visit, not only the parts that were opened while online.
+const CACHE_NAME = 'apnea-trainer-v3';
 
-// Static, predictable URLs we want guaranteed available offline.
-// Hashed JS/CSS bundles fall through to runtime caching on first online visit.
-const PRECACHE_URLS = [
+const SHELL_URLS = [
   '.',
   './index.html',
   './manifest.json',
@@ -12,32 +13,62 @@ const PRECACHE_URLS = [
   './icon-512.png',
 ];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      // Use individual put() so a single 404 doesn't fail the whole install
-      Promise.all(
-        PRECACHE_URLS.map((url) =>
-          fetch(url, { cache: 'reload' })
-            .then((res) => (res.ok ? cache.put(url, res) : null))
-            .catch(() => null)
-        )
-      )
+/** Built files to cache, read from the build's asset manifest (absent in development). */
+async function buildAssetUrls() {
+  try {
+    const res = await fetch('./asset-manifest.json', { cache: 'reload' });
+    if (!res.ok) return [];
+    const manifest = await res.json();
+    return Object.values(manifest.files || {}).filter(
+      (url) => typeof url === 'string' && !url.endsWith('.map') && !url.endsWith('.LICENSE.txt')
+    );
+  } catch (e) {
+    return [];
+  }
+}
+
+/** Cache each URL on its own so a single failure doesn't abort the install. */
+function cacheEach(cache, urls) {
+  return Promise.all(
+    urls.map((url) =>
+      fetch(url, { cache: 'reload' })
+        .then((res) => (res.ok ? cache.put(url, res) : null))
+        .catch(() => null)
     )
   );
-  self.skipWaiting();
+}
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const assets = await buildAssetUrls();
+      await cacheEach(cache, [...SHELL_URLS, ...assets]);
+      await self.skipWaiting();
+    })()
+  );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((cacheNames) =>
-        Promise.all(
-          cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
-        )
-      )
-      .then(() => self.clients.claim())
+    (async () => {
+      // Drop caches from older versions of this worker.
+      const names = await caches.keys();
+      await Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)));
+
+      // Drop hashed bundles from earlier builds that the current build no longer uses.
+      const current = new Set((await buildAssetUrls()).map((u) => new URL(u, self.location).href));
+      if (current.size > 0) {
+        const cache = await caches.open(CACHE_NAME);
+        const requests = await cache.keys();
+        await Promise.all(
+          requests
+            .filter((req) => new URL(req.url).pathname.includes('/static/') && !current.has(req.url))
+            .map((req) => cache.delete(req))
+        );
+      }
+      await self.clients.claim();
+    })()
   );
 });
 
@@ -46,11 +77,11 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  // Only handle same-origin GETs — third-party fetches passthrough.
+  // Only handle same-origin GETs; third-party requests go straight to the network.
   if (url.origin !== self.location.origin) return;
 
-  // Navigation requests: network-first so users always get the latest HTML
-  // when online, falling back to the cached shell when offline.
+  // Pages: network first so an update shows as soon as you're online,
+  // the cached page when offline.
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -64,18 +95,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Asset requests: cache-first, fill cache on miss.
+  // Everything else: cache first, filling the cache on a miss. A file that is
+  // neither cached nor reachable fails as a network error; it is never
+  // answered with the HTML page, which a script would fail to parse.
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
-      return fetch(request)
-        .then((res) => {
-          if (!res || res.status !== 200 || res.type !== 'basic') return res;
+      return fetch(request).then((res) => {
+        if (res && res.status === 200 && res.type === 'basic') {
           const copy = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return res;
-        })
-        .catch(() => caches.match('./index.html'));
+        }
+        return res;
+      });
     })
   );
 });

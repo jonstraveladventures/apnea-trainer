@@ -314,7 +314,7 @@ const useAudioCues = (preferences?: AudioPreferences): UseAudioCuesReturn => {
 
   // Pre-load the countdown mp3 (kept as a non-voice fallback option).
   useEffect(() => {
-    countdownAudioRef.current = new Audio('/audio/countdown-5-4-3-2-1.mp3');
+    countdownAudioRef.current = new Audio(`${process.env.PUBLIC_URL}/audio/countdown-5-4-3-2-1.mp3`);
   }, []);
 
   /** Speak arbitrary text using the user's chosen voice. */

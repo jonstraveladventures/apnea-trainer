@@ -22,6 +22,8 @@ This software is provided "AS IS" without any warranties. The developers and con
 
 A comprehensive desktop application for freediving and breath-hold training, built with React and Electron. This app provides structured training sessions based on evidence-based protocols for CO₂ tolerance, O₂ tolerance, breath control, and mental training.
 
+**Use it in the browser, nothing to install: [jonstraveladventures.github.io/apnea-trainer](https://jonstraveladventures.github.io/apnea-trainer/)**. Your profiles and sessions are kept in that browser on that device, and after the first visit the app works offline. In Chrome or Edge, "Install App" in the header adds it as an app of its own.
+
 ## 🎯 Key Features
 
 ### 🏊‍♂️ Comprehensive Training Sessions

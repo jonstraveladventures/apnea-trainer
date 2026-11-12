@@ -1,0 +1,51 @@
+name: pages
+
+# Builds the web app and publishes it to GitHub Pages on every push to main
+# that changes it. The repository's Pages source is set to "GitHub Actions".
+on:
+  push:
+    branches: [main]
+    paths: ["src/**", "public/**", "package.json", "package-lock.json", "tsconfig.json", "tailwind.config.js", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      # The web build doesn't need Electron's desktop binary.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Test
+        run: npm test -- --watchAll=false
+        env:
+          CI: "true"
+      - name: Build
+        run: npm run build
+        env:
+          GENERATE_SOURCEMAP: "false"
+      - name: Leave the desktop-only files out of the site
+        run: rm -f build/electron.js build/preload.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build
+      - id: deployment
+        uses: actions/deploy-pages@v4
